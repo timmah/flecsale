@@ -3,7 +3,7 @@
  * All rights reserved
  *~-------------------------------------------------------------------------~~*/
 ////////////////////////////////////////////////////////////////////////////////
-/// 
+///
 /// \file
 ///
 /// \brief This header defines some usefull types.
@@ -14,13 +14,14 @@
 // system includes
 #include <cstddef> // for size_t
 #include <cstdint> // for types
+#include <string>
 
 namespace ale {
 namespace common {
 
 //! function return values
-enum return_t { 
-  RETURN_SUCCESS = 0, //! command succeeded 
+enum return_t {
+  RETURN_SUCCESS = 0, //! command succeeded
   RETURN_FAILURE = 1  //! command failed
 };
 
@@ -51,8 +52,11 @@ using std::size_t;
 //! a counter type
 using counter_t = long long;
 
-//! the test tolerance 
+//! the test tolerance
 static constexpr real_t test_tolerance = TEST_TOLERANCE;
+
+using string_t = std::string;
+using str_cr_t = string_t const &;
 
 } // namespace
 } // namespace
