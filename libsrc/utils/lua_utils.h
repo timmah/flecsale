@@ -8,7 +8,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 #pragma once
 
-#ifdef HAVE_LUA 
+#ifdef HAVE_LUA
 
 // user includes
 #include "utils/string_utils.h"
@@ -53,10 +53,10 @@ namespace utils {
     )
 
 //! \brief Use a shared pointer to the lua state.
-//! Multiple objects may use the same lua state, so we don't want to 
+//! Multiple objects may use the same lua state, so we don't want to
 //! destroy it unless all objects are destroyed.
 using lua_state_ptr_t = std::shared_ptr<lua_State>;
- 
+
 ////////////////////////////////////////////////////////////////////////////////
 /// \defgroup lua_value lua_value
 /// \brief A struct to extract and typecast values from the lua stack.
@@ -70,14 +70,14 @@ struct lua_value {};
 
 /// \brief The implementation for integral values.
 template <typename T>
-struct lua_value< T, std::enable_if_t< std::is_integral<T>::value > > 
+struct lua_value< T, std::enable_if_t< std::is_integral<T>::value > >
 {
   /// \brief Return the value in the lua stack.
   /// \param [in] s  The lua state to query.
   /// \param [in] index  The row to access.  Defaults to the value at the top
   ///                    of the stack.
   /// \return The requested value as a long long.
-  static T get(lua_State * s, int index = -1) 
+  static T get(lua_State * s, int index = -1)
   {
     if ( !lua_isnumber(s,index) )
      raise_runtime_error( "Invalid conversion of type \"" <<
@@ -99,7 +99,7 @@ struct lua_value<T, std::enable_if_t< std::is_floating_point<T>::value > >
   /// \param [in] index  The row to access.  Defaults to the value at the top
   ///                    of the stack.
   /// \return The requested value as a double.
-  static T get(lua_State * s, int index = -1) 
+  static T get(lua_State * s, int index = -1)
   {
     if ( !lua_isnumber(s,index) )
      raise_runtime_error( "Invalid conversion of type \"" <<
@@ -113,14 +113,14 @@ struct lua_value<T, std::enable_if_t< std::is_floating_point<T>::value > >
 
 /// \brief The implementation for bool.
 template <>
-struct lua_value<bool> 
+struct lua_value<bool>
 {
   /// \brief Return the value in the lua stack.
   /// \param [in] s  The lua state to query.
   /// \param [in] index  The row to access.  Defaults to the value at the top
   ///                    of the stack.
   /// \return The requested value as a boolean.
-  static bool get(lua_State * s, int index = -1) 
+  static bool get(lua_State * s, int index = -1)
   {
     if ( !lua_isboolean(s,index) )
      raise_runtime_error( "Invalid conversion of type \"" <<
@@ -134,7 +134,7 @@ struct lua_value<bool>
 
 /// \brief The implementation for std::string.
 template <>
-struct lua_value<std::string> 
+struct lua_value<std::string>
 {
   /// \brief Return the value in the lua stack.
   /// \param [in] s  The lua state to query.
@@ -154,12 +154,12 @@ struct lua_value<std::string>
 };
 
 /// \brief The implementation for vectors.
-template< 
-  typename T, 
+template<
+  typename T,
   typename Allocator,
   template<typename,typename> class Vector
 >
-struct lua_value< Vector<T,Allocator> > 
+struct lua_value< Vector<T,Allocator> >
 {
 
   /// \brief Return the value in the lua stack.
@@ -190,12 +190,12 @@ struct lua_value< Vector<T,Allocator> >
 };
 
 /// \brief The implementation for vectors.
-template< 
-  typename T, 
-  std::size_t N, 
-  template <typename,std::size_t> class Array 
+template<
+  typename T,
+  std::size_t N,
+  template <typename,std::size_t> class Array
 >
-struct lua_value< Array<T,N> > 
+struct lua_value< Array<T,N> >
 {
 
   /// \brief Return the value in the lua stack.
@@ -214,7 +214,7 @@ struct lua_value< Array<T,N> >
     // get the size of the table
     auto n = lua_rawlen(s, -1);
     if ( n != N )
-      raise_runtime_error( 
+      raise_runtime_error(
         "Expecting array of size"<<N<<", stack array is size " << n
       );
     // extract the results
@@ -258,7 +258,7 @@ inline void lua_push(lua_State * s, float x)
 /// \brief Push a double onto the stack.
 /// \param [in] s  The lua state to push a value to.
 /// \param [in] x  The double to push.
-inline void lua_push(lua_State * s, double x) 
+inline void lua_push(lua_State * s, double x)
 { lua_pushnumber( s, x ); }
 
 /// \brief Push a boolean onto the stack.
@@ -276,10 +276,10 @@ inline void lua_push(lua_State * s, const char * str)
 /// \brief Push a std::string onto the stack.
 /// \param [in] s  The lua state to push a value to.
 /// \param [in] str  The string to push.
-inline void lua_push(lua_State * s, const std::string & str) 
+inline void lua_push(lua_State * s, const std::string & str)
 { lua_pushlstring( s, str.c_str(), str.size() ); }
 /// \}
-  
+
 ////////////////////////////////////////////////////////////////////////////////
 /// \brief A base class for several of the implemented objects.
 /// This class mainly contains a lua state pointer which all derived
@@ -298,12 +298,12 @@ public:
   lua_base_t()
     : state_( luaL_newstate(), [](lua_State * s) { lua_close(s); } )
   {}
-  
+
   /// \brief Copy constructor.
-  lua_base_t(const lua_state_ptr_t & state) 
+  lua_base_t(const lua_state_ptr_t & state)
     : state_(state)
   {}
-  
+
   /// \brief Return the raw state pointer.
   /// \remark Non-const version.
   auto state() { return state_.get(); }
@@ -335,11 +335,11 @@ public:
     }
     return os.str();
   }
- 
+
   /// \brief Dump the stack to an output stream/
   /// \param [in,out] os The stream to output to.
-  /// \return A reference to the output stream. 
-  std::ostream& dump_stack(std::ostream& os) const 
+  /// \return A reference to the output stream.
+  std::ostream& dump_stack(std::ostream& os) const
   {
     auto s = state();
     auto top = lua_gettop(s);
@@ -356,7 +356,7 @@ public:
     }
     return os;
   }
-  
+
   /// \brief Print the last row in the stack.
   void print_last_row() const
   {
@@ -371,9 +371,9 @@ public:
   /// \param [in,out] os  The output stream.
   /// \param [in] s  The object whose stack to dump.
   /// \return The output stream.
-  friend std::ostream& operator<<(std::ostream& os, const lua_base_t & s)  
-  { 
-    return s.dump_stack(os); 
+  friend std::ostream& operator<<(std::ostream& os, const lua_base_t & s)
+  {
+    return s.dump_stack(os);
   }
 };
 
@@ -401,11 +401,11 @@ public:
   /// \param [in] state  A pointer to a lua state.
   /// \param [in] ref  The lua reference key.
   lua_ref_t ( const lua_state_ptr_t & state, int ref, int type )
-    : lua_base_t(state), 
-      ref_( 
+    : lua_base_t(state),
+      ref_(
         new int{ref},
-        [s=state](int * r) 
-        { luaL_unref(s.get(), LUA_REGISTRYINDEX, *r); } 
+        [s=state](int * r)
+        { luaL_unref(s.get(), LUA_REGISTRYINDEX, *r); }
       ),
       type_(type)
   {}
@@ -427,7 +427,7 @@ public:
     return (*ref_ == LUA_REFNIL || *ref_ == LUA_NOREF);
   }
 
-};
+}; // class lua_ref_t
 
 /// \brief Create a lua reference to the last value on the stack.
 /// \param [in] state A lua state pointer.
@@ -462,21 +462,21 @@ class lua_result_t : public lua_base_t {
   /// \tparam I The static index of the tuple.
   /// \param [in,out] tup  The tuple to store the lua results in.
   template< typename Tup, int I >
-  void get_results( Tup & tup ) const 
+  void get_results( Tup & tup ) const
   {}
-  
+
   /// \brief Main recursive function to set each value of the tuple.
   /// \tparam Tup The tuple type the data gets stored as.
   /// \tparam I The static index of the tuple.
   /// \tparam Arg1,Args  The requested argument types.
   /// \param [in,out] tup  The tuple to store the lua results in.
-  template< 
+  template<
     typename Tup, int I, typename Arg1, typename... Args
   >
-  void get_results( Tup & tup ) const 
+  void get_results( Tup & tup ) const
   {
     std::get<I>(tup) = lua_value<Arg1>::get( state() );
-    // recursively extract tuple 
+    // recursively extract tuple
     get_results<Tup,I+1,Args...>( tup );
   }
   /// /}
@@ -488,7 +488,7 @@ class lua_result_t : public lua_base_t {
   /// \brief Final templated function to end the recursion.
   void push_args() const
   {}
-  
+
   /// \brief The main recursive function.
   /// \tparam Arg,Args  The function argument types.
   /// \param [in]  arg,args  The values of the function arguments.
@@ -505,7 +505,7 @@ class lua_result_t : public lua_base_t {
   /// /}
 
   /// \brief Check the stack to make sure it can be expanded.
-  /// \param [in] extra The desired size to grow the stack by. 
+  /// \param [in] extra The desired size to grow the stack by.
   void check_stack(int extra) const
   {
     auto s = state();
@@ -513,11 +513,11 @@ class lua_result_t : public lua_base_t {
     if ( !ret ) {
       std::ostringstream ss;
       ss << "Cannot grow stack " << extra << " slots operating on element \""
-         << name_ << "\"." << std::endl << "Current stack size is " 
+         << name_ << "\"." << std::endl << "Current stack size is "
          << lua_gettop(s) << ".";
       raise_runtime_error(ss.str());
     }
-  } 
+  }
 
   void check_nil(const std::string & name) const
   {
@@ -586,23 +586,23 @@ public:
   /// \param [in] ref  A reference to the last value popped off the stack.
   /// \param [in] size  The size of the object on the stack.
   lua_result_t(
-    const lua_state_ptr_t & state, 
-    const std::string & name, 
+    const lua_state_ptr_t & state,
+    const std::string & name,
     lua_ref_t && ref,
     std::size_t size
   ) : lua_base_t(state), name_(name), refs_({std::move(ref)}), size_(size)
   {}
-  
+
   /// \brief This is the main constructor with a multiple references.
   /// \param [in] state  The lua state pointer.
   /// \param [in] name  The name of the object.
   /// \param [in] refs  A references to the last set of values popped off the
   ///                   stack.
   lua_result_t(
-    const lua_state_ptr_t & state, 
-    const std::string & name, 
+    const lua_state_ptr_t & state,
+    const std::string & name,
     std::vector<lua_ref_t> && refs
-  ) : lua_base_t(state), name_(name), refs_(std::move(refs)), 
+  ) : lua_base_t(state), name_(name), refs_(std::move(refs)),
       size_(refs_.size())
   {}
 
@@ -643,10 +643,10 @@ public:
   template< typename...Args >
   explicit operator std::tuple<Args...>() const {
     constexpr int N = sizeof...(Args);
-    using Tup = std::tuple<Args...>; 
+    using Tup = std::tuple<Args...>;
     if ( refs_.size() != N )
-      raise_runtime_error( 
-        "Expecting "<<N<<" results, stack has " << refs_.size() 
+      raise_runtime_error(
+        "Expecting "<<N<<" results, stack has " << refs_.size()
       );
     push_all();
     Tup tup;
@@ -661,7 +661,7 @@ public:
   T as() const {
     return static_cast<T>(*this);
   }
-  
+
   /// \brief Explicit type conversion operators for tuples.
   /// \tparam Args The element types of the tuple.
   /// \return The typecast tuple of values.
@@ -669,14 +669,14 @@ public:
   auto as() const {
     return static_cast< std::tuple<T1,T2,Ts...> >(*this);
   }
-  
+
   /// \brief Evaluate a lua function.
   /// \tparam Args The function argument types.
   /// \param [in] args The argument types.
   /// \return A new lua_result_t with a reference to the result of the function
   ///         call.
   template < typename...Args >
-  lua_result_t operator()(Args&&...args) const 
+  lua_result_t operator()(Args&&...args) const
   {
     auto s = state();
     // get the current stack position ( the function and arguments will get
@@ -780,9 +780,9 @@ class lua_t : public lua_base_t {
 public:
 
   /// \brief Main constructor.
-  /// \param [in] with_system  If true, load all system libraries.  
+  /// \param [in] with_system  If true, load all system libraries.
   ///                          Default is true.
-  lua_t(bool with_system = true) : lua_base_t() 
+  lua_t(bool with_system = true) : lua_base_t()
   {
     if ( !state_ )
       raise_runtime_error("Cannot initialize lua state.");
@@ -817,7 +817,7 @@ public:
 
   /// \brief Access an object in the global table.
   /// \param [in] key  The key to access.
-  /// \return A lua_result_t object which points to the value of the table 
+  /// \return A lua_result_t object which points to the value of the table
   ///         lookup.
   lua_result_t operator[]( const std::string & key ) const &
   {
@@ -843,4 +843,4 @@ public:
 } // namespace ale
 
 #endif // HAVE_LUA
-  
+
