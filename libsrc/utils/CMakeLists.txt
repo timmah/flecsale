@@ -13,6 +13,8 @@ set(utils_HEADERS
   filter_iterator.h
   fixed_vector.h
   functional.h
+  inputs_non_static.h
+  input_source.h
   lua_utils.h
   python_utils.h
   string_utils.h
@@ -34,31 +36,35 @@ set(utils_HEADERS
 #)
 
 set(utils_LIBRARIES)
-if (PYTHON_LIBRARIES) 
+if (PYTHON_LIBRARIES)
   list(APPEND utils_LIBRARIES ${PYTHON_LIBRARIES})
 endif()
-if (LUA_LIBRARIES) 
+if (LUA_LIBRARIES)
   list(APPEND utils_LIBRARIES ${LUA_LIBRARIES})
 endif()
-if (Caliper_LIBRARIES) 
+if (Caliper_LIBRARIES)
   list(APPEND utils_LIBRARIES ${Caliper_LIBRARIES})
 endif()
 
 cinch_add_unit(utils
-    SOURCES 
+    SOURCES
       test/array_view.cc
       test/caliper.cc
       test/fixed_vector.cc
+      test/inputs_non_static.cc
+      test/input_source.cc
       test/lua_utils.cc
       test/python_utils.cc
       test/static_for.cc
       test/tasks.cc
+      test/test_input_hard_coded_problems.cc
       test/tuple_for_each.cc
       test/tuple_visit.cc
       test/tuple_zip.cc
       test/zip.cc
-    INPUTS 
+    INPUTS
       test/lua_test.lua
+      test/mock_box_2d.lua
       test/python_test.py
-    LIBRARIES ${utils_LIBRARIES}
+    LIBRARIES ${utils_LIBRARIES} ${CINCH_RUNTIME_LIBRARIES}
 )
