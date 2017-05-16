@@ -70,7 +70,7 @@ constexpr bool is_integral_v = std::is_integral<T>::value;
 //! \brief Test to see if all variadic template arguments Ts are of type Target.
 ////////////////////////////////////////////////////////////////////////////////
 template<typename Target, typename... Ts>
-using are_type_t = detail::and_< 
+using are_type_t = detail::and_<
   std::is_same< std::decay_t<Ts>, std::decay_t<Target> >... >;
 
 
@@ -106,7 +106,7 @@ template<typename T>
 struct is_callable : std::conditional<
   std::is_class<T>::value,
   detail::is_callable<T>,
-  std::false_type 
+  std::false_type
 >::type
 { };
 
@@ -185,10 +185,10 @@ template< typename T >
 constexpr bool is_minimal_container_v = is_minimal_container<T>::value;
 
 
-////////////////////////////////////////////////////////////////////////////////    
+////////////////////////////////////////////////////////////////////////////////
 /// \brief A helper to identify if all types Ts are integral.
 //! \remark If they are not, this version is instantiated.
-////////////////////////////////////////////////////////////////////////////////    
+////////////////////////////////////////////////////////////////////////////////
 template <typename... Ts>
 class are_integral : public std::integral_constant<bool, true>
 {};
@@ -213,7 +213,7 @@ constexpr bool are_integral_v = are_integral<Ts...>::value;
 //! \brief Extract the extents from an array of type T.
 ////////////////////////////////////////////////////////////////////////////////
 template< typename T >
-constexpr auto & extract_extents() 
+constexpr auto & extract_extents()
 {
   using Indices = std::make_index_sequence< std::rank<T>::value >;
   return detail::extract_extents_helper< T >( Indices{} );
