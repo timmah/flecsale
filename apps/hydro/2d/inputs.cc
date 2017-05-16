@@ -9,6 +9,7 @@
 
 // hydro includes
 #include "inputs.h"
+#include "flecsale/utils/inputs_non_static.h"
 
 #include <flecsale/eos/ideal_gas.h>
 
@@ -37,14 +38,14 @@ template<> real_t base_t::final_time = 0.2;
 template<> size_t base_t::max_steps = 1e6;
 
 // the equation of state
-template<> std::shared_ptr<eos_t> base_t::eos = 
-  std::make_shared< ale::eos::ideal_gas_t<real_t> >( 
-    /* gamma */ 1.4, /* cv */ 1.0 
-  ); 
+template<> std::shared_ptr<eos_t> base_t::eos =
+  std::make_shared< ale::eos::ideal_gas_t<real_t> >(
+    /* gamma */ 1.4, /* cv */ 1.0
+  );
 
 // this is a lambda function to set the initial conditions
 template<>
-inputs_t::ics_function_t base_t::ics = 
+inputs_t::ics_function_t base_t::ics =
   []( const vector_t & x, const real_t & )
   {
     real_t d, p;
@@ -56,24 +57,24 @@ inputs_t::ics_function_t base_t::ics =
     else {
       d = 1.0;
       p = 1.0;
-    }    
+    }
     return std::make_tuple( d, v, p );
   };
 
 // This function builds and returns a mesh
 template<>
-inputs_t::mesh_function_t base_t::make_mesh = 
+inputs_t::mesh_function_t base_t::make_mesh =
   [](const real_t &)
-  { 
+  {
     // the grid dimensions
     constexpr size_t num_cells_x = 10;
     constexpr size_t num_cells_y = 10;
-  
+
     constexpr real_t length_x = 1.0;
     constexpr real_t length_y = 1.0;
-  
+
     // this is the mesh object
-    return ale::mesh::box<mesh_t>( 
+    return ale::mesh::box<mesh_t>(
       num_cells_x, num_cells_y, length_x, length_y
     );
   };
