@@ -8,9 +8,11 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 // hydro includes
-#include "inputs.h"
 #include "tasks.h"
-#include "../driver.h"
+#include "../SimConfig.h"
+#include "../base_problem.h"
+#include "../driver_new.h"
+
 
 namespace flecsi {
 namespace execution {
@@ -18,10 +20,10 @@ namespace execution {
 ///////////////////////////////////////////////////////////////////////////////
 //! \brief A sample test of the hydro solver
 ///////////////////////////////////////////////////////////////////////////////
-void driver(int argc, char** argv) 
+void driver(int argc, char** argv)
 {
   using namespace apps::hydro;
-  apps::hydro::driver<inputs_t>( argc, argv );
+  apps::hydro::driver<ristra::input_engine>( argc, argv );
 }
 
 } // namespace
