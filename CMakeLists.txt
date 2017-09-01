@@ -62,8 +62,20 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
 
 # set some global variables
 set( FleCSALE_LIBRARIES )
-set( FleCSALE_DATA_DIR "${PROJECT_SOURCE_DIR}/data" CACHE INTERNAL "")  
-set( FleCSALE_TOOL_DIR "${PROJECT_SOURCE_DIR}/tools" CACHE INTERNAL "")  
+set( FleCSALE_DATA_DIR "${PROJECT_SOURCE_DIR}/data" CACHE INTERNAL "")
+set( FleCSALE_TOOL_DIR "${PROJECT_SOURCE_DIR}/tools" CACHE INTERNAL "")
+
+#------------------------------------------------------------------------------#
+# Ristra
+#------------------------------------------------------------------------------#
+find_package( ristra REQUIRED HINT $ENV{RISTRA_DIR} )
+if(not ${RISTRA_FOUND})
+  message(error "Could not find Ristra")
+else()
+  message(STATUS "RISTRA_INCLUDE_DIRS = " ${RISTRA_INCLUDE_DIRS})
+  include_directories(${RISTRA_INCLUDE_DIRS})
+ list( APPEND FleCSALE_LIBRARIES ${RISTRA_LIBRARIES} )
+endif()
 
 #------------------------------------------------------------------------------#
 # Some precision setup
@@ -72,7 +84,7 @@ set( FleCSALE_TOOL_DIR "${PROJECT_SOURCE_DIR}/tools" CACHE INTERNAL "")
 # double or single precision
 OPTION (DOUBLE_PRECISION "Use double precision reals"  ON)
 
-if( DOUBLE_PRECISION ) 
+if( DOUBLE_PRECISION )
   message(STATUS "Note: Double precision build activated.")
   add_definitions( -DDOUBLE_PRECISION )
   SET (TEST_TOLERANCE 1.0e-14 CACHE STRING "The testing tolerance" )
@@ -87,7 +99,7 @@ add_definitions( -DTEST_TOLERANCE=${TEST_TOLERANCE} )
 # size of integer ids to use
 option( USE_64BIT_IDS "Type of integer to use for ids" ON )
 
-if( USE_64BIT_IDS ) 
+if( USE_64BIT_IDS )
   message(STATUS "Note: using 64 bit integer ids.")
   add_definitions( -DUSE_64BIT_IDS )
 else()
@@ -101,9 +113,9 @@ endif()
 # find python for running regression tests
 find_package (PythonInterp QUIET)
 if (PYTHONINTERP_FOUND)
-  cmake_dependent_option( 
-    ENABLE_REGRESSION_TESTS "Enable regression tests" ON 
-    "ENABLE_UNIT_TESTS" OFF 
+  cmake_dependent_option(
+    ENABLE_REGRESSION_TESTS "Enable regression tests" ON
+    "ENABLE_UNIT_TESTS" OFF
   )
 else ()
   option(ENABLE_REGRESSION_TESTS "Enable regression tests" OFF)
@@ -134,7 +146,7 @@ if (ENABLE_PYTHON)
    message (STATUS "Found PythonLibs: ${PYTHON_INCLUDE_DIRS}")
    include_directories( ${PYTHON_INCLUDE_DIRS} )
    list( APPEND FleCSALE_LIBRARIES ${PYTHON_LIBRARIES} )
-   add_definitions( -DHAVE_PYTHON )    
+   add_definitions( -DHAVE_PYTHON )
 endif ()
 
 # find lua for embedding
@@ -150,7 +162,7 @@ if (ENABLE_LUA)
    message (STATUS "Found Lua: ${LUA_INCLUDE_DIR}")
    include_directories( ${LUA_INCLUDE_DIR} )
    list( APPEND FleCSALE_LIBRARIES ${LUA_LIBRARIES} )
-   add_definitions( -DHAVE_LUA )    
+   add_definitions( -DHAVE_LUA )
 endif ()
 
 #------------------------------------------------------------------------------#
@@ -185,7 +197,7 @@ option(ENABLE_CALIPER "Enable Caliper Support" ${Caliper_FOUND})
 if(ENABLE_CALIPER AND NOT Caliper_FOUND)
   message(FATAL_ERROR "Caliper requested, but not found")
 endif()
-  
+
 if(ENABLE_CALIPER)
   message(STATUS "Found Caliper: ${Caliper_INCLUDE_DIRS}")
   include_directories(${Caliper_INCLUDE_DIRS})
@@ -201,10 +213,10 @@ option(ENABLE_CATALYST "Link the sim with Catalyst for in situ" OFF)
 
 if (ENABLE_CATALYST)
   find_package(ParaView REQUIRED COMPONENTS vtkPVPythonCatalyst)
-  
+
   message(STATUS "Found Paraview: ${ParaView_DIR}")
   message(STATUS "IO with Paraview Catalyst enabled" )
-  
+
   include("${PARAVIEW_USE_FILE}")
   add_definitions(-DHAVE_CATALYST)
   #add_definitions( -DHAVE_VTK )
@@ -261,13 +273,13 @@ else()
 endif()
 
 if(ENABLE_SHAPO)
-  
+
   if (NOT VTK_FOUND)
     message( FATAL_ERROR "You need libVTK either from TPL or system to enable voro")
   endif()
 
   if (ShaPo_FOUND)
-    include_directories( ${SHAPO_INCLUDE_DIRS} )  
+    include_directories( ${SHAPO_INCLUDE_DIRS} )
     include( ${ShaPo_CONFIG} )
     include( ${SHAPO_USE_FILE} )
     list(APPEND FleCSALE_LIBRARIES ${SHAPO_LIBRARIES} )
@@ -275,7 +287,7 @@ if(ENABLE_SHAPO)
   else ()
     message( FATAL_ERROR "You need libShaPo either from TPL or system to enable voro" )
   endif()
-  
+
   message( STATUS "Voronoi with shapo enabled" )
 
 endif()
@@ -370,11 +382,11 @@ list(APPEND FleCSALE_LIBRARIES ${FleCSI_LIBRARIES} )
 
 set(FleCSI_EXEC_DIR ${PROJECT_SOURCE_DIR}/flecsi/flecsi/execution)
 set(
-  FleCSI_RUNTIME_MAIN ${FleCSI_EXEC_DIR}/runtime_main.cc 
+  FleCSI_RUNTIME_MAIN ${FleCSI_EXEC_DIR}/runtime_main.cc
   CACHE INTERNAL ""
 )
 
-set(FleCSI_RUNTIME_DRIVER 
+set(FleCSI_RUNTIME_DRIVER
   ${FleCSI_EXEC_DIR}/${FLECSI_RUNTIME_MODEL}/runtime_driver.cc
   CACHE INTERNAL ""
 )
