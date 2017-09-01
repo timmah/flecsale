@@ -18,6 +18,21 @@
 namespace apps {
 namespace hydro {
 
+/**\brief Hack until we work out fixed-size vectors once and for all.*/
+template <typename vector_t, typename T = typename vector_t::value_type,
+          size_t sz = vector_t::length>
+inline
+void convert_vector(vector_t const &v, std::array<T,sz> &a){
+  for(size_t i = 0; i < sz; ++i){a[i] = v[i];}
+}
+
+template <typename vector_t, typename T = typename vector_t::value_type,
+          size_t sz = vector_t::length>
+inline
+void convert_vector(std::array<T,sz> const &a,vector_t &v){
+  for (size_t i = 0; i < sz; ++i) { v[i] = a[i];}
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 //! \brief The main task for setting initial conditions
 //!
@@ -25,8 +40,8 @@ namespace hydro {
 //! \param [in]     ics  the initial conditions to set
 //! \return 0 for success
 ////////////////////////////////////////////////////////////////////////////////
-template< typename T, typename F >
-int initial_conditions( T & mesh, F && ics ) {
+template <typename T, typename F>
+int initial_conditions(T &mesh, F &&ics) {
 
   // type aliases
   using counter_t = typename T::counter_t;
@@ -46,11 +61,17 @@ int initial_conditions( T & mesh, F && ics ) {
   auto cs = mesh.cells();
   auto num_cells = cs.size();
 
+  std::array<real_t,T::num_dimensions> a, b;
   // This doesn't work with lua input
   //#pragma omp parallel for
   for ( counter_t i=0; i<num_cells; i++ ) {
     auto c = cs[i];
-    std::tie( d[c], v[c], p[c] ) = std::forward<F>(ics)( xc[c], soln_time );
+    convert_vector(xc[c],a);
+    // std::tie( d[c], v[c], p[c] ) = std::forward<F>(ics)( a, soln_time );
+    auto t = std::forward<F>(ics)( a, soln_time );
+    d[c] = std::get<0>(t);
+    convert_vector(std::get<1>(t),v[c]);
+    p[c] = std::get<2>(t);
   }
 
   return 0;
@@ -66,7 +87,7 @@ int initial_conditions( T & mesh, F && ics ) {
 //! \return 0 for success
 ////////////////////////////////////////////////////////////////////////////////
 template< typename T, typename EOS >
-int update_state_from_pressure( T & mesh, const EOS * eos ) 
+int update_state_from_pressure( T & mesh, const EOS * eos )
 {
 
   // type aliases
@@ -111,7 +132,7 @@ int update_state_from_pressure( T & mesh, const EOS * eos )
 //! \return 0 for success
 ////////////////////////////////////////////////////////////////////////////////
 template< typename T, typename EOS >
-int update_state_from_energy( T & mesh, const EOS * eos ) 
+int update_state_from_energy( T & mesh, const EOS * eos )
 {
 
   // type aliases
@@ -158,11 +179,11 @@ int evaluate_time_step( T & mesh ) {
 
   auto delta_t = flecsi_get_accessor( mesh, hydro, time_step, real_t, global, 0 );
   const auto cfl = flecsi_get_accessor( mesh, hydro, cfl, real_t, global, 0 );
- 
+
   auto area   = mesh.face_areas();
   auto normal = mesh.face_normals();
   auto volume = mesh.cell_volumes();
- 
+
   // Loop over each cell, computing the minimum time step,
   // which is also the maximum 1/dt
   real_t dt_inv(0);
@@ -225,7 +246,7 @@ int evaluate_fluxes( T & mesh ) {
   //----------------------------------------------------------------------------
   // TASK: loop over each edge and compute/store the flux
   // fluxes are stored on each edge
- 
+
   // get the faces
   auto fs = mesh.faces();
   auto num_faces = fs.size();
@@ -242,7 +263,7 @@ int evaluate_fluxes( T & mesh ) {
 
 
     // get the left state
-    auto w_left = state( cells[0] );    
+    auto w_left = state( cells[0] );
 
     // compute the face flux
     //
@@ -250,17 +271,17 @@ int evaluate_fluxes( T & mesh ) {
     if ( num_cells == 2 ) {
       auto w_right = state( cells[1] );
       flux[f] = flux_function<eqns_t>( w_left, w_right, normal[f] );
-    } 
+    }
     // boundary cell
     else {
       flux[f] = boundary_flux<eqns_t>( w_left, normal[f] );
     }
-    
+
     // scale the flux by the face area
     flux[f] *= area[f];
 
     // std::cout << flux[f] << std::endl;
-    
+
   } // for
   //----------------------------------------------------------------------------
 
@@ -275,7 +296,7 @@ int evaluate_fluxes( T & mesh ) {
 ////////////////////////////////////////////////////////////////////////////////
 template< typename T >
 solution_error_t
-apply_update( T & mesh, real_t tolerance, bool first_time ) 
+apply_update( T & mesh, real_t tolerance, bool first_time )
 {
 
   // type aliases
@@ -288,7 +309,7 @@ apply_update( T & mesh, real_t tolerance, bool first_time )
   // access what we need
   auto flux = flecsi_get_accessor( mesh, hydro, flux, flux_data_t, dense, 0 );
   state_accessor<T> state( mesh );
-  
+
   auto volume = mesh.cell_volumes();
 
   // read only access
@@ -305,20 +326,20 @@ apply_update( T & mesh, real_t tolerance, bool first_time )
 
   auto cs = mesh.cells();
   auto num_cells = cs.size();
-  
+
   #pragma omp declare reduction( + : vector_t : omp_out += omp_in ) \
     initializer (omp_priv(omp_orig))
 
   #pragma omp parallel for reduction( + : mass, mom, ener ) \
     reduction( || : bad_cell )
   for ( counter_t i=0; i<num_cells; i++ ) {
-    
+
     auto c = cs[i];
     flux_data_t delta_u( 0 );
 
     // loop over each connected edge
     for ( auto f : mesh.faces(c) ) {
-      
+
       // get the cell neighbors
       auto neigh = mesh.cells(f);
       auto num_neigh = neigh.size();
@@ -352,18 +373,18 @@ apply_update( T & mesh, real_t tolerance, bool first_time )
     }
 
     // check the solution quantities
-    if ( ie < 0 || rho < 0 ) 
+    if ( ie < 0 || rho < 0 )
       bad_cell = true;
 
   } // for
   //----------------------------------------------------------------------------
-  
+
   // return unphysical if something went wrong
   if (bad_cell) {
-    std::cout << "Negative internal energy or density encountered in a cell" 
+    std::cout << "Negative internal energy or density encountered in a cell"
       << std::endl;
     return solution_error_t::unphysical;
-  } 
+  }
 
   std::stringstream mom_ss;
   mom_ss.setf( std::ios::scientific );
@@ -400,7 +421,7 @@ apply_update( T & mesh, real_t tolerance, bool first_time )
   *ener0 = ener;
 
   return solution_error_t::ok;
-  
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -493,10 +514,10 @@ int restore_solution( T & mesh ) {
 //! \return 0 for success
 ////////////////////////////////////////////////////////////////////////////////
 template< typename T >
-int output( T & mesh, 
-                const std::string & prefix, 
-                const std::string & postfix, 
-                size_t output_freq ) 
+int output( T & mesh,
+                const std::string & prefix,
+                const std::string & postfix,
+                size_t output_freq )
 {
 
   if ( output_freq < 1 ) return 0;
@@ -508,9 +529,9 @@ int output( T & mesh,
   ss << prefix;
   ss << std::setw( 7 ) << std::setfill( '0' ) << cnt++;
   ss << "."+postfix;
-  
+
   mesh::write_mesh( ss.str(), mesh );
-  
+
   return 0;
 }
 
