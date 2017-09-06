@@ -28,7 +28,7 @@ namespace burton {
 
 //! This namespace is used to expose enumerations and types.
 namespace attributes {
-  
+
 ////////////////////////////////////////////////////////////////////////////////
 /// \brief The burton mesh index spaces.
 ////////////////////////////////////////////////////////////////////////////////
@@ -80,7 +80,7 @@ public:
 
   //! a compile string type
   using const_string_t = typename config_t::const_string_t;
-  
+
   //! a bitfield type
   using bitfield_t = typename config_t::bitfield_t;
 
@@ -159,7 +159,7 @@ public:
       auto n = verts.size();
       std::vector<vertex_t*> elem_vs( n );
       for ( auto i=0; i<n; i++ ) elem_vs[i] = vs[ verts[i].id() ];
-        create_cell( elem_vs );   
+        create_cell( elem_vs );
     } // for
 
     // initialize everything
@@ -170,7 +170,7 @@ public:
 
     // override the region ids
     auto num_reg = src.num_regions();
-    for ( auto c : cells() ) 
+    for ( auto c : cells() )
       c->region() = src_cells[c.id()]->region();
     set_num_regions( num_reg );
   }
@@ -213,11 +213,11 @@ public:
       case attributes::cells:
         return base_t::num_entities(cell_t::dimension);
       case attributes::corners:
-        return 
-          base_t::template 
+        return
+          base_t::template
             num_entities<corner_t::dimension, corner_t::domain>();
       case attributes::wedges:
-        return 
+        return
           base_t::template num_entities<wedge_t::dimension, wedge_t::domain>();
       default:
         raise_runtime_error("unknown index space");
@@ -280,16 +280,16 @@ public:
   //! \return The number of vertices in the burton mesh.
   size_t num_vertices() const
   {
-    return 
+    return
       base_t::template num_entities<vertex_t::dimension, vertex_t::domain>();
   }
 
   //! \brief Return all vertices in the burton mesh.
   //! \return Return all vertices in the burton mesh as a sequence for use,
   //!   e.g., in range based for loops.
-  decltype(auto) vertices() const 
-  { 
-    return base_t::template entities<vertex_t::dimension, vertex_t::domain>(); 
+  decltype(auto) vertices() const
+  {
+    return base_t::template entities<vertex_t::dimension, vertex_t::domain>();
   }
 
   //! \brief Return vertices associated with entity instance of type \e E.
@@ -317,7 +317,7 @@ public:
   template <size_t M, class E>
   decltype(auto) vertices(const flecsi::topology::domain_entity<M, E> & e) const
   {
-    return 
+    return
       base_t::template entities<vertex_t::dimension, M, vertex_t::domain>(
         e.entity()
       );
@@ -338,7 +338,7 @@ public:
   >
   decltype(auto) vertices( P && p ) const
   {
-    
+
     auto vs = vertices();
     return vs.filter( std::forward<P>(p) );
   }
@@ -362,7 +362,7 @@ public:
   template <class E>
   decltype(auto) vertex_ids(E * e) const
   {
-    return 
+    return
       base_t::template entity_ids<vertex_t::dimension, vertex_t::domain>(e);
   }
 
@@ -375,20 +375,20 @@ public:
   //!
   //! \return Vertices for entity \e e in domain \e M.
   template <size_t M, class E>
-  decltype(auto) 
+  decltype(auto)
   vertex_ids(const flecsi::topology::domain_entity<M, E> & e) const
   {
-    return 
+    return
       base_t::template entity_ids<vertex_t::dimension, M, vertex_t::domain>(
         e.entity()
       );
   }
 
   //! \brief Return boundary  vertices in the burton mesh.
-  //! \return Return all boundary vertices in the burton mesh as a sequence for 
+  //! \return Return all boundary vertices in the burton mesh as a sequence for
   //!         use, e.g., in range based for loops.
   decltype(auto) boundary_vertices() const
-  { 
+  {
     auto verts = vertices();
     auto bnd_verts = verts.filter(
       [](auto v){ return v->is_boundary(); }
@@ -409,10 +409,10 @@ public:
   }
 
   //! \brief Return all edges in the burton mesh.
-  //! \return Return all edges in the burton mesh as a sequence for use, e.g., 
+  //! \return Return all edges in the burton mesh as a sequence for use, e.g.,
   //!         in range based for loops.
-  decltype(auto) edges() const { 
-    return base_t::template entities<edge_t::dimension, 0>(); 
+  decltype(auto) edges() const {
+    return base_t::template entities<edge_t::dimension, 0>();
   }
 
   //! \brief Return edges for entity \e e in domain \e M.
@@ -445,7 +445,7 @@ public:
   //!
   //! \param[in] e instance of entity to return edge ids for.
   //!
-  //! \return Return edge ids associated with entity instance \e e as a 
+  //! \return Return edge ids associated with entity instance \e e as a
   //!         sequence.
   template <class E>
   decltype(auto) edge_ids(E * e) const
@@ -454,10 +454,10 @@ public:
   }
 
   //! \brief Return boundary edges in the burton mesh.
-  //! \return Return all boundary vertices in the burton mesh as a sequence for 
+  //! \return Return all boundary vertices in the burton mesh as a sequence for
   //!         use, e.g., in range based for loops.
   decltype(auto) boundary_edges() const
-  { 
+  {
     auto es = edges();
     auto bnd_es = es.filter(
       [](auto e){ return e->is_boundary(); }
@@ -517,7 +517,7 @@ public:
   template <size_t M, class E>
   decltype(auto) faces(const flecsi::topology::domain_entity<M, E> & e) const
   {
-    return 
+    return
       base_t::template entities<face_t::dimension, M, face_t::domain>(
         e.entity()
       );
@@ -536,7 +536,7 @@ public:
   //!
   //! \param[in] e instance of entity to return face ids for.
   //!
-  //! \return Return face ids associated with entity instance \e e as a 
+  //! \return Return face ids associated with entity instance \e e as a
   //!         sequence.
   template <class E>
   decltype(auto) face_ids(E * e) const
@@ -545,13 +545,13 @@ public:
   }
 
   //! \brief Return the precomputed areas for each face.
-  decltype(auto) face_areas() const 
+  decltype(auto) face_areas() const
   {
     return flecsi_get_accessor( *this, mesh, face_area, real_t, dense, 0 );
   }
 
   //! \brief Return the precomputed normals for each face.
-  decltype(auto) face_normals() const 
+  decltype(auto) face_normals() const
   {
     return flecsi_get_accessor( *this, mesh, face_normal, vector_t, dense, 0 );
   }
@@ -609,7 +609,7 @@ public:
   template <size_t M, class E>
   decltype(auto) cells(const flecsi::topology::domain_entity<M, E> & e) const
   {
-    return 
+    return
       base_t::template entities<cell_t::dimension, M, cell_t::domain>(
         e.entity()
       );
@@ -628,7 +628,7 @@ public:
   //!
   //! \param[in] e instance of entity to return cell ids for.
   //!
-  //! \return Return cell ids associated with entity instance \e e as a 
+  //! \return Return cell ids associated with entity instance \e e as a
   //!         sequence.
   template <class E>
   decltype(auto) cell_ids(E * e) const
@@ -648,19 +648,19 @@ public:
   }
 
   //! \brief Return the precomputed volumes for each cell.
-  decltype(auto) cell_volumes() const 
+  decltype(auto) cell_volumes() const
   {
     return flecsi_get_accessor( *this, mesh, cell_volume, real_t, dense, 0 );
   }
 
   //! \brief Return the precomputed centroids for each cell.
-  decltype(auto) cell_centroids() const 
+  decltype(auto) cell_centroids() const
   {
     return flecsi_get_accessor( *this, mesh, cell_centroid, vector_t, dense, 0 );
   }
 
   //! \brief Return the precomputed centroids for each cell.
-  decltype(auto) cell_min_lengths() const 
+  decltype(auto) cell_min_lengths() const
   {
     return flecsi_get_accessor( *this, mesh, cell_min_length, real_t, dense, 0 );
   }
@@ -718,7 +718,7 @@ public:
   template<size_t M, class E>
   decltype(auto) wedges(const flecsi::topology::domain_entity<M, E> & e) const
   {
-    return 
+    return
       base_t::template entities<wedge_t::dimension, M, wedge_t::domain>(
         e.entity()
       );
@@ -746,19 +746,19 @@ public:
   }
 
   //! \brief Return the precomputed facet normals for each wedge.
-  decltype(auto) wedge_facet_normals() const 
+  decltype(auto) wedge_facet_normals() const
   {
     return flecsi_get_accessor( *this, mesh, wedge_facet_normal, vector_t, dense, 0 );
   }
 
   //! \brief Return the precomputed facet centroids for each wedge.
-  decltype(auto) wedge_facet_centroids() const 
+  decltype(auto) wedge_facet_centroids() const
   {
     return flecsi_get_accessor( *this, mesh, wedge_facet_centroid, vector_t, dense, 0 );
   }
 
   //! \brief Return the precomputed facet area for each wdge.
-  decltype(auto) wedge_facet_areas() const 
+  decltype(auto) wedge_facet_areas() const
   {
     return flecsi_get_accessor( *this, mesh, wedge_facet_area, real_t, dense, 0 );
   }
@@ -771,7 +771,7 @@ public:
   //! \return The number of corners in the burton mesh.
   size_t num_corners() const
   {
-    return 
+    return
       base_t::template num_entities<corner_t::dimension, corner_t::domain>();
   }
 
@@ -817,7 +817,7 @@ public:
   template<size_t M, class E>
   decltype(auto) corners(const flecsi::topology::domain_entity<M, E> & e) const
   {
-    return 
+    return
       base_t::template entities<corner_t::dimension, M, corner_t::domain>(
         e.entity()
       );
@@ -841,7 +841,7 @@ public:
   template <class E>
   decltype(auto) corner_ids(E * e) const
   {
-    return 
+    return
       base_t::template entity_ids<corner_t::dimension, corner_t::domain>(e);
   }
 
@@ -904,10 +904,10 @@ public:
   template< typename V >
   auto create_cell(
     V && verts,
-    typename std::enable_if_t< 
+    typename std::enable_if_t<
       utils::is_same_v< typename std::decay_t<V>::value_type, vertex_t* > &&
       std::remove_pointer_t<typename std::decay_t<V>::value_type>::num_dimensions == 2
-    >* = nullptr ) 
+    >* = nullptr )
   {
     return create_2d_element_from_verts_<cell_t>( std::forward<V>(verts) );
   }
@@ -916,11 +916,11 @@ public:
   //! \param[in] verts The vertices defining the cell.
   //! \return Pointer to cell created with \e verts.
   template< typename V >
-  auto  create_cell( 
+  auto  create_cell(
     std::initializer_list<V*> verts,
-    typename std::enable_if_t< 
-      utils::is_same_v<V, vertex_t> && V::num_dimensions == 2 
-    >* = nullptr ) 
+    typename std::enable_if_t<
+      utils::is_same_v<V, vertex_t> && V::num_dimensions == 2
+    >* = nullptr )
   {
     return create_2d_element_from_verts_<cell_t>( verts );
   }
@@ -932,10 +932,10 @@ public:
   template< typename V >
   auto create_cell(
     V && verts,
-    typename std::enable_if_t< 
+    typename std::enable_if_t<
       utils::is_same_v< typename std::decay_t<V>::value_type, vertex_t* > &&
       std::remove_pointer_t<typename std::decay_t<V>::value_type>::num_dimensions == 3
-    >* = nullptr ) 
+    >* = nullptr )
   {
     return create_3d_element_from_verts_( std::forward<V>(verts) );
   }
@@ -944,11 +944,11 @@ public:
   //! \param[in] verts The vertices defining the cell.
   //! \return Pointer to cell created with \e verts.
   template< typename V >
-  auto  create_cell( 
+  auto  create_cell(
     std::initializer_list<V*> verts,
-    typename std::enable_if_t< 
+    typename std::enable_if_t<
       utils::is_same_v<V, vertex_t> && V::num_dimensions == 3
-    >* = nullptr ) 
+    >* = nullptr )
   {
     return create_3d_element_from_verts_( verts );
   }
@@ -959,14 +959,14 @@ public:
   template< typename F >
   auto create_cell(
     F && faces,
-    typename std::enable_if_t< 
+    typename std::enable_if_t<
       utils::is_same_v< typename std::decay_t<F>::value_type, face_t* >  &&
       std::remove_pointer_t<typename std::decay_t<F>::value_type>::num_dimensions == 3
-    >* = nullptr ) 
+    >* = nullptr )
   {
     return create_3d_element_from_faces_( std::forward<F>(faces) );
   }
-  
+
   //! \brief Create a cell in the burton mesh.
   //! \param[in] faces The faces defining the cell.
   //! \return Pointer to cell created with \e faces.
@@ -985,7 +985,7 @@ public:
     return create_2d_element_from_verts_<face_t>( std::forward<V>(verts) );
   } // create_cell
 
-  
+
   //! \brief Create a face in the burton mesh.
   //! \param[in] verts The vertices defining the face.
   //! \return Pointer to cell created with \e faces.
@@ -1021,7 +1021,7 @@ public:
 
   //! \brief Initialize burton mesh state for the number of \e vertices.
   //!
-  //! \param[in] vertices The number of \e vertices to initialize the burton 
+  //! \param[in] vertices The number of \e vertices to initialize the burton
   //!                     mesh with.
   void init_parameters(size_t num_nodes)
   { }
@@ -1065,12 +1065,12 @@ public:
 
     // register edge data
     flecsi_register_data(*this, mesh, edge_midpoint, vector_t, dense, 1, attributes::edges);
-    
+
     // register wedge data
     flecsi_register_data(*this, mesh, wedge_facet_area, real_t, dense, 1, attributes::wedges);
     flecsi_register_data(*this, mesh, wedge_facet_normal, vector_t, dense, 1, attributes::wedges);
     flecsi_register_data(*this, mesh, wedge_facet_centroid, vector_t, dense, 1, attributes::wedges);
-    
+
     // register time state
     flecsi_register_data(*this, mesh, time, real_t, global, 1 );
     flecsi_register_data(*this, mesh, time_step, size_t, global, 1 );
@@ -1099,12 +1099,12 @@ public:
       if ( f->is_boundary() ) {
         // point flags
         auto ps = vertices(f);
-        for ( auto p : ps ) 
+        for ( auto p : ps )
           point_flags[ p ].setbit( bits::boundary );
         // edge flags are only for 3d
         if ( num_dimensions == 3 ) {
           auto es = edges(f);
-          for ( auto e : es ) 
+          for ( auto e : es )
             edge_flags[e].setbit( bits::boundary );
         } // dims
       } // is_boundary
@@ -1136,28 +1136,27 @@ public:
     // some includes
     using math::dot_product;
 
-    // a lambda function for raising errors or returning 
+    // a lambda function for raising errors or returning
     // false
     auto raise_or_return = [=]( std::ostream & msg )
       {
         if ( raise_on_error )
           raise_runtime_error( msg.rdbuf() );
-        else 
+        else
           std::cerr << msg.rdbuf() << std::endl;
         return false;
       };
-    
-    // we use a stringstream to construct messages and pass them 
+
+    // we use a stringstream to construct messages and pass them
     // simultanesously
     std::stringstream ss;
-
 
     //--------------------------------------------------------------------------
     // make sure face normal points out from first cell
     bool bad_face = false;
     auto fs = faces();
     auto num_faces = fs.size();
-    
+
     #pragma omp parallel for reduction( || : bad_face )
     for( counter_t fid=0; fid<num_faces; ++fid ) {
       auto f = fs[fid];
@@ -1166,7 +1165,7 @@ public:
       auto c = cells(f).front();
       auto cx = c->midpoint();
       auto delta = fx - cx;
-      auto dot = dot_product( n, delta );      
+      auto dot = dot_product( n, delta );
       if ( dot < 0 ) {
         bad_face = bad_face || true;
         #pragma omp critical
@@ -1174,7 +1173,7 @@ public:
           ss << "Face " << f.id() << " has opposite normal" << std::endl;
         }
       }
-    } 
+    }
 
     if ( bad_face ) return raise_or_return( ss );
 
@@ -1197,14 +1196,14 @@ public:
 
       if ( cs.size() != 1 ) {
         #pragma omp critical
-        ss << "Corner " << cn.id() << " has " << cs.size() << "/=1 cells" 
+        ss << "Corner " << cn.id() << " has " << cs.size() << "/=1 cells"
            << std::endl;
       }
 
       if ( fs.size() != num_dimensions ) {
         #pragma omp critical
         {
-          ss << "Corner " << cn.id() << " has " << fs.size() << "/=" 
+          ss << "Corner " << cn.id() << " has " << fs.size() << "/="
              << num_dimensions << " faces" << std::endl;
         }
       }
@@ -1212,7 +1211,7 @@ public:
       if ( es.size() != num_dimensions ) {
         #pragma omp critical
         {
-          ss << "Corner " << cn.id() << " has " << es.size() << "/=" 
+          ss << "Corner " << cn.id() << " has " << es.size() << "/="
              << num_dimensions << " edges" << std::endl;
         }
       }
@@ -1227,7 +1226,7 @@ public:
 
       auto cl = cs.front();
       auto vt = vs.front();
-      
+
       if ( ws.size() % 2 != 0 ) {
         #pragma omp critical
         {
@@ -1236,7 +1235,7 @@ public:
         }
       }
 
-      for ( auto wg = ws.begin(); wg != ws.end();  ) 
+      for ( auto wg = ws.begin(); wg != ws.end();  )
         for ( auto i=0; i<2 && wg != ws.end(); i++, ++wg)
         {
           auto cls = cells( *wg );
@@ -1246,36 +1245,36 @@ public:
           auto cns = corners( *wg );
           if ( cls.size() != 1 ) {
             #pragma omp critical
-            {          
-              ss << "Wedge " << (*wg).id() << " has " << cls.size() 
+            {
+              ss << "Wedge " << (*wg).id() << " has " << cls.size()
                  << "/=1 cells" << std::endl;
             }
           }
           if ( fs.size() != 1 ) {
-            #pragma omp critical 
-            {           
-              ss << "Wedge " << (*wg).id() << " has " << fs.size() 
+            #pragma omp critical
+            {
+              ss << "Wedge " << (*wg).id() << " has " << fs.size()
                  << "/=1 faces" << std::endl;
             }
           }
           if ( es.size() != 1 ) {
-            #pragma omp critical 
+            #pragma omp critical
             {
-              ss << "Wedge " << (*wg).id() << " has " << es.size() 
+              ss << "Wedge " << (*wg).id() << " has " << es.size()
                  << "/=1 edges" << std::endl;
             }
           }
           if ( vs.size() != 1 ) {
             #pragma omp critical
             {
-              ss << "Wedge " << (*wg).id() << " has " << vs.size() 
+              ss << "Wedge " << (*wg).id() << " has " << vs.size()
                  << "/=1 vertices" << std::endl;
             }
           }
           if ( cns.size() != 1 ) {
             #pragma omp critical
             {
-              ss << "Wedge " << (*wg).id() << " has " << cns.size() 
+              ss << "Wedge " << (*wg).id() << " has " << cns.size()
                  << "/=1 corners" << std::endl;
             }
           }
@@ -1285,25 +1284,25 @@ public:
           if ( vert != vt ) {
             #pragma omp critical
             {
-              ss << "Wedge " << (*wg).id() << " has incorrect vertex " 
+              ss << "Wedge " << (*wg).id() << " has incorrect vertex "
                  << vert.id() << "!=" << vt.id() << std::endl;
             }
           }
           if ( cell != cl ) {
             #pragma omp critical
             {
-              ss << "Wedge " << (*wg).id() << " has incorrect cell " 
+              ss << "Wedge " << (*wg).id() << " has incorrect cell "
                  << cell.id() << "!=" << cl.id() << std::endl;
             }
           }
           if ( corn != cn ) {
             #pragma omp critical
             {
-              ss << "Wedge " << (*wg).id() << " has incorrect corner " 
+              ss << "Wedge " << (*wg).id() << " has incorrect corner "
                  << corn.id() << "!=" << cn.id() << std::endl;
             }
           }
-          auto fc = fs.front();            
+          auto fc = fs.front();
           auto fx = fc->midpoint();
           auto cx = cl->midpoint();
           auto delta = fx - cx;
@@ -1319,12 +1318,12 @@ public:
           if ( dot < 0 ) {
             #pragma omp critical
             {
-              ss << "Wedge " << (*wg).id() << " has opposite normal" 
+              ss << "Wedge " << (*wg).id() << " has opposite normal"
                  << std::endl;
             }
           }
         } // wedges
-      
+
     } // corners
 
 
@@ -1343,7 +1342,7 @@ public:
     // get the mesh info
     auto cs = cells();
     auto fs = faces();
-    auto es = edges();  
+    auto es = edges();
     auto cnrs = corners();
     auto num_cells = cs.size();
     auto num_faces = fs.size();
@@ -1357,13 +1356,13 @@ public:
 
     auto face_area = flecsi_get_accessor(*this, mesh, face_area, real_t, dense, 0);
     auto face_norm = flecsi_get_accessor(*this, mesh, face_normal, vector_t, dense, 0);
-    auto face_midp = flecsi_get_accessor(*this, mesh, face_midpoint, vector_t, dense, 0); 
+    auto face_midp = flecsi_get_accessor(*this, mesh, face_midpoint, vector_t, dense, 0);
 
-    auto edge_midp = flecsi_get_accessor(*this, mesh, edge_midpoint, vector_t, dense, 0); 
+    auto edge_midp = flecsi_get_accessor(*this, mesh, edge_midpoint, vector_t, dense, 0);
 
     auto wedge_facet_normal = flecsi_get_accessor(*this, mesh, wedge_facet_normal, vector_t, dense, 0);
     auto wedge_facet_area = flecsi_get_accessor(*this, mesh, wedge_facet_area, real_t, dense, 0);
-    auto wedge_facet_centroid = flecsi_get_accessor(*this, mesh, wedge_facet_centroid, vector_t, dense, 0); 
+    auto wedge_facet_centroid = flecsi_get_accessor(*this, mesh, wedge_facet_centroid, vector_t, dense, 0);
 
     //--------------------------------------------------------------------------
     // compute cell parameters
@@ -1377,7 +1376,7 @@ public:
         cell_volume[c] = c->volume();
         cell_center[c] = c->centroid();
         cell_min_length[c] = c->min_length();
-      } 
+      }
 
       //--------------------------------------------------------------------------
       // compute face parameters
@@ -1388,7 +1387,7 @@ public:
         face_area[f] = f->area();
         face_norm[f] = f->normal() / face_area[f];
         face_midp[f] = f->midpoint();
-      } 
+      }
 
       //--------------------------------------------------------------------------
       // compute edge parameters
@@ -1397,7 +1396,7 @@ public:
       for ( counter_t i=0; i<num_edges; i++ ) {
         auto e = es[i];
         edge_midp[e] = e->midpoint();
-      } 
+      }
 
       //--------------------------------------------------------------------------
       // compute wedge parameters
@@ -1409,7 +1408,7 @@ public:
         // both wedges SHOULD have the same vertex
         const auto & v = vertices(cn).front()->coordinates();
         // first compute the normals
-        for ( auto wit = ws.begin(); wit != ws.end(); ++wit ) 
+        for ( auto wit = ws.begin(); wit != ws.end(); ++wit )
         {
           // get the first wedge normal
           {
@@ -1444,7 +1443,7 @@ public:
   //! \brief Install a boundary and tag the relatex entities.
   //============================================================================
   template< typename P >
-  tag_t install_boundary( P && p ) 
+  tag_t install_boundary( P && p )
   {
     // increment the boundary face storage
     auto this_bnd = face_sets_.size();
@@ -1479,13 +1478,13 @@ public:
     std::sort( this_bnd_edges.begin(), this_bnd_edges.end() );
     std::sort( this_bnd_verts.begin(), this_bnd_verts.end() );
 
-    this_bnd_edges.erase( 
-      std::unique( this_bnd_edges.begin(), this_bnd_edges.end() ), 
-      this_bnd_edges.end() 
+    this_bnd_edges.erase(
+      std::unique( this_bnd_edges.begin(), this_bnd_edges.end() ),
+      this_bnd_edges.end()
     );
-    this_bnd_verts.erase( 
-      std::unique( this_bnd_verts.begin(), this_bnd_verts.end() ), 
-      this_bnd_verts.end() 
+    this_bnd_verts.erase(
+      std::unique( this_bnd_verts.begin(), this_bnd_verts.end() ),
+      this_bnd_verts.end()
     );
 
     // add the edge tags
@@ -1533,7 +1532,7 @@ public:
   template< typename E, typename V >
   auto create_2d_element_from_verts_( V && verts  )
   {
-    
+
     E * e = nullptr;
 
     switch ( verts.size() ) {
@@ -1561,7 +1560,7 @@ public:
   template< typename V >
   auto create_3d_element_from_verts_( V && verts )
   {
-    
+
     cell_t * c = nullptr;
 
     switch ( verts.size() ) {
@@ -1574,7 +1573,7 @@ public:
       c = base_t::template make< burton_hexahedron_t >(*this);
       break;
     default:
-      raise_runtime_error( "can't build polyhedron from vertices alone" );      
+      raise_runtime_error( "can't build polyhedron from vertices alone" );
       break;
     }
 
@@ -1589,7 +1588,7 @@ public:
   template< typename F >
   auto create_3d_element_from_faces_( F && faces )
   {
-    
+
     cell_t * c = nullptr;
 
     switch ( faces.size() ) {
@@ -1607,10 +1606,10 @@ public:
 
 
   //============================================================================
-  // Private Data 
+  // Private Data
   //============================================================================
 
-  //! \brief Tagged sets 
+  //! \brief Tagged sets
   //@ {
   std::vector< std::vector<face_t*> >   face_sets_;
   std::vector< std::vector<edge_t*> >   edge_sets_;
@@ -1631,11 +1630,11 @@ public:
 //==============================================================================
 
 //!  \brief Print some statistics.
-//! 
+//!
 //!  \param[in] stream The stream to print to.
-//! 
+//!
 //!  \param[in] mesh   The mesh object to print stats for.
-//! 
+//!
 //!  \return the stream operator.
 template< std::size_t M >
 inline
