@@ -116,12 +116,17 @@ box( std::array<size_t,2> const &num_cells,
 //! \param [in] max_x,max_y,max_z  The max coordinate in the x, y, and z dir.
 //! \return a new mesh object
 ////////////////////////////////////////////////////////////////////////////////
-template< typename T >
-std::enable_if_t< T::num_dimensions == 3, T >
-box( typename T::size_t num_cells_x, typename T::size_t num_cells_y, typename T::size_t num_cells_z,
-     typename T::real_t min_x,       typename T::real_t min_y,       typename T::real_t min_z,
-     typename T::real_t max_x,       typename T::real_t max_y,       typename T::real_t max_z )
-{
+template <typename T>
+std::enable_if_t<T::num_dimensions == 3, T>
+box(typename T::size_t num_cells_x,
+    typename T::size_t num_cells_y,
+    typename T::size_t num_cells_z,
+    typename T::real_t min_x,
+    typename T::real_t min_y,
+    typename T::real_t min_z,
+    typename T::real_t max_x,
+    typename T::real_t max_y,
+    typename T::real_t max_z) {
 
   using counter_t = typename T::counter_t;
 
@@ -132,7 +137,6 @@ box( typename T::size_t num_cells_x, typename T::size_t num_cells_y, typename T:
   auto length_y = max_y - min_y;
   auto length_z = max_z - min_z;
 
-
   auto num_vert_x = num_cells_x + 1;
   auto num_vert_y = num_cells_y + 1;
   auto num_vert_z = num_cells_z + 1;
@@ -140,7 +144,6 @@ box( typename T::size_t num_cells_x, typename T::size_t num_cells_y, typename T:
   // reserve storage for the mesh
   auto num_vertex = num_vert_x * num_vert_y * num_vert_z;
   mesh.init_parameters( num_vertex );
-
 
   // create the individual vertices
   using vertex_t = typename T::vertex_t;
@@ -172,7 +175,6 @@ box( typename T::size_t num_cells_x, typename T::size_t num_cells_y, typename T:
     {
       return stride_vert_x*i + stride_vert_y*j +  + stride_vert_z*k;
     };
-
 
   // go over vertices counter clockwise to define cell
   for( counter_t k = 0; k < num_cells_z; ++k )
@@ -210,8 +212,10 @@ std::enable_if_t<T::num_dimensions == 3, T>
 box(std::array<size_t, 3> const &num_cells,
     std::array<typename T::real_t, 3> const &mins,
     std::array<typename T::real_t, 3> const &maxs) {
-  return box<T>(num_cells[0], num_cells[0], num_cells[0], mins[0], mins[1],
-                mins[2], maxs[0], maxs[1], maxs[2]);
+  return box<T>(
+    num_cells[0], num_cells[1], num_cells[2],
+    mins[0], mins[1], mins[2],
+    maxs[0], maxs[1], maxs[2]);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
