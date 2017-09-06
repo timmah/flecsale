@@ -108,7 +108,7 @@ int driver(int argc, char** argv)
   // array<size_t,dim> targets
   init_value<ristra::input_traits::arr_d_s_t> iv_dimensions("dimensions");
   // initial conditions functions
-  init_value<ristra::input_traits::ics_function_t> iv_ics_func("ics_func");
+  init_value<SimConfig::ics_function_t> iv_ics_func("ics_func");
 
   // register inputs sources
   auto phcs(base_problem());
@@ -123,13 +123,11 @@ int driver(int argc, char** argv)
     ristra::lua_source_ptr_t plua(ristra::mk_lua(input_file_name));
     inputs.register_lua_source(plua.release());
   }
-
   bool all_resolved = inputs.resolve_inputs();
   if(!all_resolved){
     // there must be a better way...
     raise_runtime_error("Failed to resolve required inputs!");
   }
-
   // With input resolution complete, now make configuration data available
   real_t const CFL         = iv_CFL.get();
   size_t const output_freq = iv_output_freq.get();
@@ -154,12 +152,12 @@ int driver(int argc, char** argv)
   //===========================================================================
   // Mesh Setup
   //===========================================================================
-
   // make the mesh
-  auto mesh = simcfg.make_mesh( /* solution time */ 0.0 );
+  SimConfig::mesh_t mesh = simcfg.make_mesh( /* solution time */ 0.0 );
 
   // this is the mesh object
-  mesh.is_valid();
+  bool mesh_ok = mesh.is_valid(false);
+  Insist(mesh_ok,"mesh not ok");
 
   cout << mesh;
 
@@ -225,7 +223,7 @@ int driver(int argc, char** argv)
 
   // now call the main task to set the ics.  Here we set primitive/physical
   // quanties
-  ristra::input_traits::ics_function_t ics(inputs.get_ics_function("ics_func"));
+  SimConfig::ics_function_t ics(inputs.get_ics_function("ics_func"));
   flecsi_execute_task( initial_conditions_task, loc, single, mesh, ics);
 
   #ifdef HAVE_CATALYST
