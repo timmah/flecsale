@@ -11,6 +11,7 @@
 #include "ristra/inputs.h"
 
 #include <memory>
+#include <tuple>
 
 namespace apps::hydro{
 
@@ -21,7 +22,7 @@ struct SimConfig{
 
   using real_t = ristra::input_traits::real_t;
   using string_t = ristra::input_traits::string_t;
-  using eos_t = eos::eos_base_t<real_t>;
+  using eos_t = flecsale::eos::eos_base_t<real_t>;
   using eos_ptr_t = std::unique_ptr<eos_t>;
   using mesh_t = flecsale::mesh::burton::burton_mesh_t<dim>;
   using mesh_ptr_t = std::unique_ptr<mesh_t>;
