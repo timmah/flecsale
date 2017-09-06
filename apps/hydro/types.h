@@ -32,13 +32,6 @@ namespace eos   = flecsale::eos;
 namespace eqns  = flecsale::eqns;
 namespace io    = flecsale::io;
 
-// mesh and some underlying data types
-template <std::size_t N>
-using mesh_t = typename mesh::burton::burton_mesh_t<N>;
-
-using mesh_2d_t = mesh_t<2>;
-using mesh_3d_t = mesh_t<3>;
-
 using size_t = common::size_t;
 using real_t = common::real_t;
 
@@ -55,16 +48,16 @@ using std::cout;
 using std::cerr;
 using std::endl;
 
-//! \brief a class to distinguish between different types of 
+//! \brief a class to distinguish between different types of
 //!   update errors.
-enum class solution_error_t 
+enum class solution_error_t
 {
   unphysical, variance, ok
 };
 
-//! \brief a class to distinguish between different types of 
+//! \brief a class to distinguish between different types of
 //!   restarting modes.
-enum class mode_t 
+enum class mode_t
 {
   normal, retry, restart, quit
 };
@@ -75,11 +68,11 @@ enum class mode_t
 ////////////////////////////////////////////////////////////////////////////////
 template< typename E, typename UL, typename UR, typename V >
 auto flux_function( UL && left_state, UR && right_state, V && norm )
-{ 
-  return 
-    eqns::hlle_flux<E>( std::forward<UL>(left_state), 
-                        std::forward<UR>(right_state), 
-                        std::forward<V>(norm) ); 
+{
+  return
+    eqns::hlle_flux<E>( std::forward<UL>(left_state),
+                        std::forward<UR>(right_state),
+                        std::forward<V>(norm) );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -88,9 +81,9 @@ auto flux_function( UL && left_state, UR && right_state, V && norm )
 ////////////////////////////////////////////////////////////////////////////////
 template< typename E, typename U, typename V >
 auto boundary_flux( U && state, V && norm )
-{ 
-  return 
-    E::wall_flux( std::forward<U>(state), std::forward<V>(norm) ); 
+{
+  return
+    E::wall_flux( std::forward<U>(state), std::forward<V>(norm) );
 }
 
 
@@ -99,7 +92,7 @@ auto boundary_flux( U && state, V && norm )
 //! \tparam M  the mesh type
 ////////////////////////////////////////////////////////////////////////////////
 template < typename M >
-class state_accessor 
+class state_accessor
 {
 public:
 
@@ -110,7 +103,7 @@ public:
   //! \brief determine the type of accessor
   //! \tparam T the data type we are accessing
   template< typename T >
-  using accessor_t = 
+  using accessor_t =
     decltype( flecsi_get_accessor( std::declval<M>(), hydro, var_name, T, dense, 0 ) );
 
   //! \brief main constructor
@@ -131,14 +124,14 @@ public:
   //! \param [in] i  the element we are accessing
   //! \return a tuple of references to all the state data
   template< typename T >
-  constexpr auto operator()( T && i ) const 
+  constexpr auto operator()( T && i ) const
   {
     using std::forward;
-    return std::forward_as_tuple( d[ forward<T>(i) ], 
-                                  v[ forward<T>(i) ], 
-                                  p[ forward<T>(i) ], 
-                                  e[ forward<T>(i) ], 
-                                  t[ forward<T>(i) ], 
+    return std::forward_as_tuple( d[ forward<T>(i) ],
+                                  v[ forward<T>(i) ],
+                                  p[ forward<T>(i) ],
+                                  e[ forward<T>(i) ],
+                                  t[ forward<T>(i) ],
                                   a[ forward<T>(i) ] );
   }
 
@@ -149,14 +142,14 @@ public:
   //! \param [in] i  the element we are accessing
   //! \return a tuple of references to all the state data
   template< typename T >
-  auto operator()( T && i ) 
+  auto operator()( T && i )
   {
     using std::forward;
-    return std::forward_as_tuple( d[ forward<T>(i) ], 
-                                  v[ forward<T>(i) ], 
-                                  p[ forward<T>(i) ], 
-                                  e[ forward<T>(i) ], 
-                                  t[ forward<T>(i) ], 
+    return std::forward_as_tuple( d[ forward<T>(i) ],
+                                  v[ forward<T>(i) ],
+                                  p[ forward<T>(i) ],
+                                  e[ forward<T>(i) ],
+                                  t[ forward<T>(i) ],
                                   a[ forward<T>(i) ] );
   }
 
@@ -169,7 +162,7 @@ private:
   accessor_t<real_t>   e;
   accessor_t<real_t>   t;
   accessor_t<real_t>   a;
-       
+
 };
 
 } // namespace hydro
