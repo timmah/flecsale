@@ -12,6 +12,7 @@
 // hydro includes
 #include "../types.h"
 #include "../tasks.h"
+#include "../SimConfig.h"
 #include "ristra/inputs.h"
 
 #include <flecsi/execution/context.h>
@@ -19,6 +20,8 @@
 
 namespace apps {
 namespace hydro {
+
+using mesh_3d_t = SimConfig::mesh_t;
 
 ////////////////////////////////////////////////////////////////////////////////
 //! \brief The main task for setting initial conditions

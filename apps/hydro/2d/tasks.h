@@ -10,6 +10,7 @@
 #pragma once
 
 // hydro includes
+#include "../SimConfig.h"
 #include "../types.h"
 #include "../tasks.h"
 #include "ristra/inputs.h"
@@ -19,6 +20,8 @@
 
 namespace apps {
 namespace hydro {
+
+using mesh_2d_t = SimConfig::mesh_t;
 
 ////////////////////////////////////////////////////////////////////////////////
 //! \brief The main task for setting initial conditions
