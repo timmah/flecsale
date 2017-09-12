@@ -223,7 +223,8 @@ int driver(int argc, char** argv)
 
   // now call the main task to set the ics.  Here we set primitive/physical
   // quanties
-  SimConfig::ics_function_t ics(inputs.get_ics_function("ics_func"));
+  SimConfig::ics_function_t ics(
+    inputs.get_value<SimConfig::ics_function_t>("ics_func"));
   flecsi_execute_task( initial_conditions_task, loc, single, mesh, ics);
 
   #ifdef HAVE_CATALYST
