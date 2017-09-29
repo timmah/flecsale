@@ -38,7 +38,7 @@ struct triangle<2> {
   //! \brief the centroid function
   //============================================================================
   template< typename T >
-  static auto centroid( const T & pt0, const T & pt1, const T & pt2 ) 
+  static auto centroid( const T & pt0, const T & pt1, const T & pt2 )
   {
     return midpoint( pt0, pt1, pt2 );
   }
@@ -47,14 +47,14 @@ struct triangle<2> {
   //! \brief the midpoint is the same as the centroid
   //========================auto ===============================================
   template< typename T >
-  static T midpoint( const T & pt0, const T & pt1, const T & pt2 ) 
+  static T midpoint( const T & pt0, const T & pt1, const T & pt2 )
   {
     using value_type = typename T::value_type;
-    constexpr auto third = 
+    constexpr auto third =
       static_cast<value_type>(1) / static_cast<value_type>(3);
-    return { 
-      third * ( pt0[0] + pt1[0] + pt2[0] ),  
-      third * ( pt0[1] + pt1[1] + pt2[1] ),  
+    return {
+      third * ( pt0[0] + pt1[0] + pt2[0] ),
+      third * ( pt0[1] + pt1[1] + pt2[1] ),
     };
   }
 
@@ -62,32 +62,32 @@ struct triangle<2> {
   //! \brief the volume function
   //============================================================================
   template< typename T >
-  static auto area( const T & pt0, const T & pt1, const T & pt2 ) 
+  static auto area( const T & pt0, const T & pt1, const T & pt2 )
   {
     using value_type = typename T::value_type;
-    constexpr auto half = 
+    constexpr auto half =
       static_cast<value_type>(1) / static_cast<value_type>(2);
     T u{ pt1[0] - pt0[0], pt1[1] - pt0[1] };
     T v{ pt2[0] - pt0[0], pt2[1] - pt0[1] };
     auto cross = cross_product( u, v );
     return half * std::abs( cross );
   }
-  
+
   //============================================================================
   //! \brief the normal of the triangle
   //============================================================================
   template< typename T >
-  static T normal( const T & pt0, const T & pt1, const T & pt2 ) 
+  static T normal( const T & pt0, const T & pt1, const T & pt2 )
   {
     using value_type = typename T::value_type;
-    constexpr auto half = 
+    constexpr auto half =
       static_cast<value_type>(1) / static_cast<value_type>(2);
     T u{ pt1[0] - pt0[0], pt1[1] - pt0[1] };
     T v{ pt2[0] - pt0[0], pt2[1] - pt0[1] };
     auto cross = cross_product( u, v );
     return {0, half*cross};
   }
-  
+
 };
 
 
@@ -106,7 +106,7 @@ struct triangle<3> {
   //! \brief the centroid function
   //============================================================================
   template< typename T >
-  static auto centroid( const T & pt0, const T & pt1, const T & pt2 ) 
+  static auto centroid( const T & pt0, const T & pt1, const T & pt2 )
   {
     return midpoint( pt0, pt1, pt2 );
   }
@@ -115,26 +115,26 @@ struct triangle<3> {
   //! \brief the midpoint is the same as the centroid
   //========================auto ===============================================
   template< typename T >
-  static T midpoint( const T & pt0, const T & pt1, const T & pt2 ) 
+  static T midpoint( const T & pt0, const T & pt1, const T & pt2 )
   {
     using value_type = typename T::value_type;
-    constexpr auto third = 
+    constexpr auto third =
       static_cast<value_type>(1) / static_cast<value_type>(3);
-    return { 
-      third * ( pt0[0] + pt1[0] + pt2[0] ),  
-      third * ( pt0[1] + pt1[1] + pt2[1] ),  
-      third * ( pt0[2] + pt1[2] + pt2[2] ),  
+    return {
+      third * ( pt0[0] + pt1[0] + pt2[0] ),
+      third * ( pt0[1] + pt1[1] + pt2[1] ),
+      third * ( pt0[2] + pt1[2] + pt2[2] ),
     };
   }
-  
+
   //============================================================================
   //! \brief the volume function
   //============================================================================
   template< typename T >
-  static auto area( const T & pt0, const T & pt1, const T & pt2 ) 
+  static auto area( const T & pt0, const T & pt1, const T & pt2 )
   {
     using value_type = typename T::value_type;
-    constexpr auto half = 
+    constexpr auto half =
       static_cast<value_type>(1) / static_cast<value_type>(2);
     T u{ pt1[0] - pt0[0], pt1[1] - pt0[1], pt1[2] - pt0[2] };
     T v{ pt2[0] - pt0[0], pt2[1] - pt0[1], pt2[2] - pt0[2] };
@@ -146,18 +146,18 @@ struct triangle<3> {
   //! \brief the normal of the trianlge
   //============================================================================
   template< typename T >
-  static auto normal( const T & pt0, const T & pt1, const T & pt2 ) 
+  static auto normal( const T & pt0, const T & pt1, const T & pt2 )
   {
     using value_type = typename T::value_type;
-    constexpr auto half = 
+    constexpr auto half =
       static_cast<value_type>(1) / static_cast<value_type>(2);
     T u{ pt1[0] - pt0[0], pt1[1] - pt0[1], pt1[2] - pt0[2] };
     T v{ pt2[0] - pt0[0], pt2[1] - pt0[1], pt2[2] - pt0[2] };
-    auto cross = cross_product( u, v );
+    auto cross = flecsale::math::cross_product( u, v );
     cross *= half;
     return cross;
   }
-  
+
 };
 
 } // namespace shapes
