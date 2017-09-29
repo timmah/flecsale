@@ -30,7 +30,10 @@ namespace math {
 //!  \tparam N The dimension of the array, i.e., the number of elements
 //!    to be stored in the array.
 ////////////////////////////////////////////////////////////////////////////////
-template <typename T, std::size_t N> 
+
+// template <typename T, size_t N> using array = std::array<T,N>;
+
+template <typename T, std::size_t N>
 class array {
 
 public:
@@ -47,7 +50,7 @@ public:
   using size_type       = std::size_t;
   using difference_type = std::ptrdiff_t;
   using counter_type    = utils::select_counter_t<N>;
-  
+
   //! \brief For iterator support.
   //! @{
   using iterator        = pointer;
@@ -60,7 +63,6 @@ public:
   using const_reverse_iterator = std::reverse_iterator<const_iterator>;
   //! @}
 
-  //! \brief The array size.
   static constexpr size_type length  = N;
   //! @}
 
@@ -72,7 +74,7 @@ private:
   //! @{
 
   //! \brief The main data container, which is just a std::array.
-  T elems_[length];
+  std::array<T,length> elems_;
 
   //! @}
 
@@ -95,36 +97,36 @@ public:
   constexpr array(const array<T2,N> &rhs) noexcept
   {
     for ( counter_type i=0; i<N; ++i )
-      elems_[i] = rhs.elems_[i]; 
+      elems_[i] = rhs.elems_[i];
   }
 
   //! \brief Constructor with variadic arguments.
   //! \param[in] args The individual array values.
   template <
     typename... Args,
-    typename = std::enable_if_t< 
+    typename = std::enable_if_t<
       ( sizeof...(Args) == N && sizeof...(Args) >= 2 )
     >
   >
-  constexpr array(Args&&... args) noexcept : 
+  constexpr array(Args&&... args) noexcept :
     elems_{ static_cast<T>( std::forward<Args>(args) )... }
-  { 
+  {
     //std::cout << "array (variadic constructor)\n";
   }
- 
+
   //! \brief Constructor with one value.
   //! \param[in] val The value to set the array to.
   template < typename T2 >
-  constexpr array(const T2 & val)  noexcept 
+  constexpr array(const T2 & val)  noexcept
   //elems_( utils::fill<length>::apply( static_cast<T>(val) ) )
   //elems_( utils::make_array<value_type,length>( static_cast<T>(val) ) )
-  { 
+  {
     //std::cout << "array (single value constructor)\n";
     fill( val );
   }
 
   // @}
-   
+
   //===========================================================================
   //! \brief Iterators.
   //===========================================================================
@@ -132,42 +134,42 @@ public:
 
   //! \brief return an iterator to the beginning of the array
   //! @{
-                  iterator  begin()       { return elems_; }
-  constexpr const_iterator  begin() const { return elems_; }
+                  iterator  begin()       { return elems_.data(); }
+  constexpr const_iterator  begin() const { return elems_.data(); }
   constexpr const_iterator cbegin() const { return begin(); }
   //! @}
-        
+
   //! \brief return an iterator to the end of the array
   //! @{
-                  iterator  end()       { return elems_+length; }
-  constexpr const_iterator  end() const { return elems_+length; }
+                  iterator  end()       { return elems_.data()+length; }
+  constexpr const_iterator  end() const { return elems_.data()+length; }
   constexpr const_iterator cend() const { return end(); }
 
 
   //! \brief return a reverse iterator to the beginning of the aray
   //! @{
-  reverse_iterator rbegin() 
+  reverse_iterator rbegin()
   { return reverse_iterator(end()); }
-  
-  const_reverse_iterator rbegin() const 
+
+  const_reverse_iterator rbegin() const
   { return const_reverse_iterator(end()); }
-  
-  const_reverse_iterator crbegin() const 
+
+  const_reverse_iterator crbegin() const
   { return const_reverse_iterator(end()); }
   //! @}
 
   //! \brief return a reverse iterator to the end of the aray
   //! @{
-  reverse_iterator rend() 
+  reverse_iterator rend()
   { return reverse_iterator(begin()); }
 
-  const_reverse_iterator rend() const 
+  const_reverse_iterator rend() const
   { return const_reverse_iterator(begin()); }
-  
-  const_reverse_iterator crend() const 
+
+  const_reverse_iterator crend() const
   { return const_reverse_iterator(begin()); }
   //! @}
- 
+
   //! @}
 
   //===========================================================================
@@ -177,26 +179,26 @@ public:
   //! \brief Return the `i`th element.
   //! \param [in] i  The element to access.
   //! @{
-  reference operator[](size_type i) 
-  { 
+  reference operator[](size_type i)
+  {
     assert( i < size() && "out of range" );
     return elems_[i];
   }
-        
-  const_reference operator[](size_type i) const 
-  {     
+
+  const_reference operator[](size_type i) const
+  {
     assert( i < size() && "out of range" );
-    return elems_[i]; 
+    return elems_[i];
   }
 
-  reference operator()(size_type i) 
-  { 
+  reference operator()(size_type i)
+  {
     assert( i < size() && "out of range" );
     return elems_[i];
   }
 
   const_reference operator()(size_type i) const
-  { 
+  {
     assert( i < size() && "out of range" );
     return elems_[i];
   }
@@ -205,43 +207,43 @@ public:
   //! \brief Return the `i`th element with a range check.
   //! \param [in] i  The element to access.
   //! @{
-  reference at(size_type i) 
-  { 
-    return i >= size() ? 
-      throw std::out_of_range("array<>: index out of range") : 
+  reference at(size_type i)
+  {
+    return i >= size() ?
+      throw std::out_of_range("array<>: index out of range") :
       elems_[i];
   }
 
   const_reference at(size_type i) const
-  { 
-    return i >= size() ? 
-      throw std::out_of_range("array<>: index out of range") : 
+  {
+    return i >= size() ?
+      throw std::out_of_range("array<>: index out of range") :
       elems_[i];
   }
   //! @}
 
   //! \brief return the first element
   //! @{
-  reference front() 
+  reference front()
   { return elems_[0]; }
-        
-  const_reference front() const 
+
+  const_reference front() const
   { return elems_[0]; }
   //! @}
-        
+
   //! \brief return the last element
   //! @{
-  reference back() 
+  reference back()
   { return elems_[size()-1]; }
-        
-  const_reference back() const 
+
+  const_reference back() const
   {  return elems_[size()-1]; }
   //! @}
 
 
   //  \brief direct access to data (read-only)
   //! @{
-  const T* data() const { return elems_; }
+  const T* data() const { return elems_.data(); }
   T* data() { return elems_.data(); }
   //! @}
 
@@ -259,7 +261,7 @@ public:
 
   //! \brief checks whether container is empty
   static constexpr bool empty() { return false; }
-  
+
   //! \brief returns the maximum possible number of elements
   static constexpr size_type max_size() { return size(); }
   //! @}
@@ -271,30 +273,35 @@ public:
   //! @{
 
   //  \brief swap contents (note: linear complexity)
-  void swap (array& y) 
+  void swap (array& y)
   {
-    for ( counter_type i=0; i<N; i++ ) std::swap(elems_[i], y.elems_[i]);    
+    for ( counter_type i=0; i<N; i++ ) std::swap(elems_[i], y.elems_[i]);
+    // elems_.swap(y.elems_);
+  }
+
+  void swap(std::array<T,length> &y){
+    for ( counter_type i=0; i<N; i++ ) std::swap(elems_[i], y[i]);
   }
 
   //! \brief assign one value to all elements
   void fill(const T& value)
   {
-    for ( counter_type i=0; i<N; i++ ) elems_[i] = value;    
+    for ( counter_type i=0; i<N; i++ ) elems_[i] = value;
 
   }
 
-  //! \brief Replaces the contents of the container. 
+  //! \brief Replaces the contents of the container.
   //! \tparam InputIt  The input iterator type
   //! \param [in] first  the start of the range to copy the elements from
   //! \param [in] last   the end of the range to copy the elements from
   template < class InputIt >
-  void assign(InputIt first, InputIt last) 
-  { 
+  void assign(InputIt first, InputIt last)
+  {
     std::copy( first, last, begin() );
   }
 
-  void assign( std::initializer_list<T> list ) 
-  { 
+  void assign( std::initializer_list<T> list )
+  {
     assert( list.size() == size() && "input list size mismatch" );
     assign( list.begin(), list.end() );
   }
@@ -311,7 +318,7 @@ public:
   //!\brief  assignment with type conversion
   template <typename T2>
   auto & operator= (const array<T2,N>& rhs) {
-    for ( counter_type i=0; i<N; i++ ) elems_[i] = rhs.elems_[i];    
+    for ( counter_type i=0; i<N; i++ ) elems_[i] = rhs.elems_[i];
     return *this;
   }
 
@@ -330,7 +337,7 @@ public:
   //! \return A reference to the current object.
   template <typename T2>
   auto & operator+=(const array<T2,N> & rhs) {
-    for ( counter_type i=0; i<N; i++ ) elems_[i] += rhs.elems_[i];    
+    for ( counter_type i=0; i<N; i++ ) elems_[i] += rhs.elems_[i];
     return *this;
   }
 
@@ -339,7 +346,7 @@ public:
   //! \return A reference to the current object.
   template <typename T2>
   auto & operator+=(const T2 & val) {
-    for ( counter_type i=0; i<N; i++ ) elems_[i] += val;    
+    for ( counter_type i=0; i<N; i++ ) elems_[i] += val;
     return *this;
   }
 
@@ -348,7 +355,7 @@ public:
   //! \return A reference to the current object.
   template <typename T2>
   auto & operator-=(const array<T2,N> & rhs) {
-    for ( counter_type i=0; i<N; i++ ) elems_[i] -= rhs.elems_[i];    
+    for ( counter_type i=0; i<N; i++ ) elems_[i] -= rhs.elems_[i];
     return *this;
   }
 
@@ -357,7 +364,7 @@ public:
   //! \return A reference to the current object.
   template <typename T2>
   auto & operator-=(const T2 & val) {
-    for ( counter_type i=0; i<N; i++ ) elems_[i] -= val;    
+    for ( counter_type i=0; i<N; i++ ) elems_[i] -= val;
     return *this;
   }
 
@@ -365,9 +372,9 @@ public:
   //! \brief Multiplication binary operator involving another array.
   //! \param[in] rhs The array on the right hand side of the operator.
   //! \return A reference to the current object.
-  template <typename T2> 
+  template <typename T2>
   auto & operator*=(const array<T2,N> & rhs) {
-    for ( counter_type i=0; i<N; i++ ) elems_[i] *= rhs.elems_[i];    
+    for ( counter_type i=0; i<N; i++ ) elems_[i] *= rhs.elems_[i];
     return *this;
   }
 
@@ -376,7 +383,7 @@ public:
   //! \return A reference to the current object.
   template <typename T2>
   auto & operator*=(const T2 & val) {
-    for ( counter_type i=0; i<N; i++ ) elems_[i] *= val;    
+    for ( counter_type i=0; i<N; i++ ) elems_[i] *= val;
     return *this;
   }
 
@@ -385,7 +392,7 @@ public:
   //! \return A reference to the current object.
   template <typename T2>
   auto & operator/=(const array<T2,N> & rhs) {
-    for ( counter_type i=0; i<N; i++ ) elems_[i] /= rhs.elems_[i];    
+    for ( counter_type i=0; i<N; i++ ) elems_[i] /= rhs.elems_[i];
     return *this;
   }
 
@@ -418,14 +425,14 @@ public:
 ////////////////////////////////////////////////////////////////////////////////
 
 
-//! \brief lexicographically compares the values in the array 
+//! \brief lexicographically compares the values in the array
 //! \param[in] lhs The quantity on the lhs.
 //! \param[in] rhs The quantity on the rhs.
 template<typename T, std::size_t N>
 bool operator==(const array<T,N>& lhs, const array<T,N>& rhs)
 {
   for ( typename array<T,N>::counter_type i=0; i<N; i++ )
-    if ( lhs[i] != rhs[i] ) 
+    if ( lhs[i] != rhs[i] )
       return false;
   return true;
 }
@@ -434,7 +441,7 @@ template<typename T, typename U, std::size_t N>
 bool operator==(const array<T,N>& lhs, const U& rhs)
 {
   for ( typename array<T,N>::counter_type i=0; i<N; i++ )
-    if ( lhs[i] != rhs ) 
+    if ( lhs[i] != rhs )
       return false;
   return true;
 }
@@ -462,14 +469,12 @@ bool operator>= (const array<T,N>& x, const array<T,N>& y) {
   return !(x<y);
 }
 
-//! \brief  global swap(), specializes the std::swap algorithm 
+//! \brief  global swap(), specializes the std::swap algorithm
 template<typename T, std::size_t N>
 inline void swap (array<T,N>& x, array<T,N>& y) {
   x.swap(y);
 }
 
-
-  
 //! \brief Addition operator involving two arrays.
 //! \tparam T  The array base value type.
 //! \tparam D  The array dimension.
@@ -477,12 +482,12 @@ inline void swap (array<T,N>& x, array<T,N>& y) {
 //! \param[in] rhs The array on the right hand side of the operator.
 //! \return A reference to the current object.
 template <typename T, std::size_t N>
-auto operator+( const array<T,N>& lhs, 
+auto operator+( const array<T,N>& lhs,
                 const array<T,N>& rhs )
 {
   array<T,N> tmp;
-  for ( typename array<T,N>::counter_type i=0; i<N; i++ ) 
-    tmp[i] = lhs[i] + rhs[i];    
+  for ( typename array<T,N>::counter_type i=0; i<N; i++ )
+    tmp[i] = lhs[i] + rhs[i];
   return tmp;
 }
 
@@ -494,22 +499,22 @@ auto operator+( const array<T,N>& lhs,
 //! \return A reference to the current object.
 template <typename T, typename U, std::size_t N>
 std::enable_if_t< utils::is_arithmetic_v< std::decay_t<U> >, array<T,N> >
-operator+( const array<T,N>& lhs, 
+operator+( const array<T,N>& lhs,
            const U& rhs )
 {
   array<T,N> tmp;
-  for ( typename array<T,N>::counter_type i=0; i<N; i++ ) 
+  for ( typename array<T,N>::counter_type i=0; i<N; i++ )
     tmp[i] = lhs[i] + rhs;
   return tmp;
 }
 
 template <typename T, typename U, std::size_t N>
 std::enable_if_t< utils::is_arithmetic_v< std::decay_t<U> >, array<T,N> >
-operator+( const U& lhs, 
+operator+( const U& lhs,
            const array<T,N>& rhs )
 {
   array<T,N> tmp;
-  for ( typename array<T,N>::counter_type i=0; i<N; i++ ) 
+  for ( typename array<T,N>::counter_type i=0; i<N; i++ )
     tmp[i] = lhs + rhs[i];
   return tmp;
 }
@@ -521,12 +526,12 @@ operator+( const U& lhs,
 //! \param[in] rhs The array on the right hand side of the operator.
 //! \return A reference to the current object.
 template <typename T, std::size_t N>
-auto operator-( const array<T,N>& lhs, 
+auto operator-( const array<T,N>& lhs,
                 const array<T,N>& rhs )
 {
   array<T,N> tmp;
-  for ( typename array<T,N>::counter_type i=0; i<N; i++ ) 
-    tmp[i] = lhs[i] - rhs[i];    
+  for ( typename array<T,N>::counter_type i=0; i<N; i++ )
+    tmp[i] = lhs[i] - rhs[i];
   return tmp;
 }
 
@@ -538,22 +543,22 @@ auto operator-( const array<T,N>& lhs,
 //! \return A reference to the current object.
 template <typename T, typename U, std::size_t N>
 std::enable_if_t< utils::is_arithmetic_v< std::decay_t<U> >, array<T,N> >
-operator-( const array<T,N>& lhs, 
+operator-( const array<T,N>& lhs,
            const U& rhs )
 {
   array<T,N> tmp;
-  for ( typename array<T,N>::counter_type i=0; i<N; i++ ) 
+  for ( typename array<T,N>::counter_type i=0; i<N; i++ )
     tmp[i] = lhs[i] - rhs;
   return tmp;
 }
 
 template <typename T, typename U, std::size_t N>
 std::enable_if_t< utils::is_arithmetic_v< std::decay_t<U> >, array<T,N> >
-operator-( const U& lhs, 
+operator-( const U& lhs,
            const array<T,N>& rhs )
 {
   array<T,N> tmp;
-  for ( typename array<T,N>::counter_type i=0; i<N; i++ ) 
+  for ( typename array<T,N>::counter_type i=0; i<N; i++ )
     tmp[i] = lhs - rhs[i];
   return tmp;
 }
@@ -565,12 +570,12 @@ operator-( const U& lhs,
 //! \param[in] rhs The array on the right hand side of the operator.
 //! \return A reference to the current object.
 template <typename T, std::size_t N>
-auto operator*( const array<T,N>& lhs, 
+auto operator*( const array<T,N>& lhs,
                 const array<T,N>& rhs )
 {
   array<T,N> tmp;
-  for ( typename array<T,N>::counter_type i=0; i<N; i++ ) 
-    tmp[i] = lhs[i] * rhs[i];    
+  for ( typename array<T,N>::counter_type i=0; i<N; i++ )
+    tmp[i] = lhs[i] * rhs[i];
   return tmp;
 }
 
@@ -583,11 +588,11 @@ auto operator*( const array<T,N>& lhs,
 //! \return A reference to the current object.
 template <typename T, typename U, std::size_t N>
 std::enable_if_t< utils::is_arithmetic_v< std::decay_t<U> >, array<T,N> >
-operator*( const array<T,N>& lhs, 
+operator*( const array<T,N>& lhs,
            const U& rhs )
 {
   array<T,N> tmp;
-  for ( typename array<T,N>::counter_type i=0; i<N; i++ ) 
+  for ( typename array<T,N>::counter_type i=0; i<N; i++ )
     tmp[i] = lhs[i] * rhs;
   return tmp;
 }
@@ -598,7 +603,7 @@ operator*( const U & lhs,
            const array<T,N>& rhs )
 {
   array<T,N> tmp;
-  for ( typename array<T,N>::counter_type i=0; i<N; i++ ) 
+  for ( typename array<T,N>::counter_type i=0; i<N; i++ )
     tmp[i] = lhs * rhs[i];
   return tmp;
 }
@@ -610,12 +615,12 @@ operator*( const U & lhs,
 //! \param[in] rhs The array on the right hand side of the operator.
 //! \return A reference to the current object.
 template <typename T, std::size_t N>
-auto operator/( const array<T,N>& lhs, 
+auto operator/( const array<T,N>& lhs,
                 const array<T,N>& rhs )
 {
   array<T,N> tmp;
-  for ( typename array<T,N>::counter_type i=0; i<N; i++ ) 
-    tmp[i] = lhs[i] / rhs[i];    
+  for ( typename array<T,N>::counter_type i=0; i<N; i++ )
+    tmp[i] = lhs[i] / rhs[i];
   return tmp;
 }
 
@@ -629,23 +634,23 @@ auto operator/( const array<T,N>& lhs,
 //! \return A reference to the current object.
 template <typename T, typename U, std::size_t N>
 std::enable_if_t< utils::is_arithmetic_v< std::decay_t<U> >, array<T,N> >
-operator/( const array<T,N>& lhs, 
+operator/( const array<T,N>& lhs,
            const U& rhs )
 {
   array<T,N> tmp;
   auto inv = static_cast<T>(1) / rhs;
-  for ( typename array<T,N>::counter_type i=0; i<N; i++ ) 
+  for ( typename array<T,N>::counter_type i=0; i<N; i++ )
     tmp[i] = lhs[i] * inv;
   return tmp;
 }
 
 template <typename T, typename U, std::size_t N>
 std::enable_if_t< utils::is_arithmetic_v< std::decay_t<U> >, array<T,N> >
-operator/( const U& lhs, 
+operator/( const U& lhs,
            const array<T,N>& rhs )
 {
   array<T,N> tmp;
-  for ( typename array<T,N>::counter_type i=0; i<N; i++ ) 
+  for ( typename array<T,N>::counter_type i=0; i<N; i++ )
     tmp[i] = lhs / rhs[i];
   return tmp;
 }
