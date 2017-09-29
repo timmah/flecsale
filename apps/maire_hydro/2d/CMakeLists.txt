@@ -4,46 +4,46 @@
 #~----------------------------------------------------------------------------~#
 
 add_executable( maire_hydro_2d
-  $<TARGET_OBJECTS:common> 
-  inputs.cc
+  $<TARGET_OBJECTS:common>
   driver.cc
   ${FleCSI_RUNTIME_DRIVER}
   ${FleCSI_RUNTIME_MAIN}
 )
 target_link_libraries( maire_hydro_2d flecsale )
+add_definitions(-DFLECSALE_DIMENSION=2)
 
-if (LUA_FOUND) 
+if (LUA_FOUND)
 
-  create_regression_test( 
+  create_regression_test(
     NAME sedov_maire_2d
     COMMAND $<TARGET_FILE:maire_hydro_2d> -f ${CMAKE_CURRENT_SOURCE_DIR}/sedov_2d.lua
-    COMPARE sedov_2d0000020.dat 
-    STANDARD ${CMAKE_CURRENT_SOURCE_DIR}/sedov_2d0000020.dat.std 
+    COMPARE sedov_2d0000020.dat
+    STANDARD ${CMAKE_CURRENT_SOURCE_DIR}/sedov_2d0000020.dat.std
   )
-  
-  create_regression_test( 
+
+  create_regression_test(
     NAME sedov_maire_2d_omp4
     COMMAND $<TARGET_FILE:maire_hydro_2d> -f ${CMAKE_CURRENT_SOURCE_DIR}/sedov_2d.lua
     THREADS 4
-    COMPARE sedov_2d0000020.dat 
-    STANDARD ${CMAKE_CURRENT_SOURCE_DIR}/sedov_2d0000020.dat.std 
+    COMPARE sedov_2d0000020.dat
+    STANDARD ${CMAKE_CURRENT_SOURCE_DIR}/sedov_2d0000020.dat.std
   )
 
 else()
 
-  create_regression_test( 
+  create_regression_test(
     NAME sedov_maire_2d
     COMMAND $<TARGET_FILE:maire_hydro_2d>
-    COMPARE sedov_2d0000020.dat 
-    STANDARD ${CMAKE_CURRENT_SOURCE_DIR}/sedov_2d0000020.dat.std 
+    COMPARE sedov_2d0000020.dat
+    STANDARD ${CMAKE_CURRENT_SOURCE_DIR}/sedov_2d0000020.dat.std
   )
-  
-  create_regression_test( 
+
+  create_regression_test(
     NAME sedov_maire_2d_omp4
     COMMAND $<TARGET_FILE:maire_hydro_2d>
     THREADS 4
-    COMPARE sedov_2d0000020.dat 
-    STANDARD ${CMAKE_CURRENT_SOURCE_DIR}/sedov_2d0000020.dat.std 
+    COMPARE sedov_2d0000020.dat
+    STANDARD ${CMAKE_CURRENT_SOURCE_DIR}/sedov_2d0000020.dat.std
   )
 
 endif()

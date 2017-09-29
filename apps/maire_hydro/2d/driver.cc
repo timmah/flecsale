@@ -7,10 +7,13 @@
 /// \brief Simple tests related to solving full hydro solutions.
 ///////////////////////////////////////////////////////////////////////////////
 
-// hydro includes
-#include "inputs.h"
+// tasks.h must be first
 #include "tasks.h"
-#include "../driver.h"
+
+#include "../SimConfig.h"
+#include "../base_problem.h"
+#include "../driver_new.h"
+#include "../input_types.h"
 
 namespace flecsi {
 namespace execution {
@@ -18,10 +21,9 @@ namespace execution {
 ///////////////////////////////////////////////////////////////////////////////
 //! \brief A sample test of the hydro solver
 ///////////////////////////////////////////////////////////////////////////////
-void driver(int argc, char** argv) 
-{
+void driver(int argc, char **argv) {
   using namespace apps::hydro;
-  apps::hydro::driver<inputs_t>( argc, argv );
+  apps::hydro::driver<apps::hydro::input_engine>(argc, argv);
 }
 
 } // namespace

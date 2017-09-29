@@ -12,6 +12,7 @@
 // hydro includes
 #include "../types.h"
 #include "../tasks.h"
+#include "../input_types.h"
 
 #include <flecsi/execution/context.h>
 #include <flecsi/execution/execution.h>
@@ -26,8 +27,8 @@ namespace hydro {
 //! \param [in]     ics  the initial conditions to set
 //! \return 0 for success
 ////////////////////////////////////////////////////////////////////////////////
-int initial_conditions_task( 
-  mesh_2d_t & mesh, inputs_t::ics_function_t ics 
+int initial_conditions_task(
+  mesh_2d_t & mesh, input_traits::ics_function_t ics
 ) {
   return initial_conditions( mesh, ics );
 }
@@ -40,7 +41,7 @@ int initial_conditions_task(
 //! \param [in,out] mesh the mesh object
 //! \return 0 for success
 ////////////////////////////////////////////////////////////////////////////////
-int update_state_from_pressure_task( 
+int update_state_from_pressure_task(
   const mesh_2d_t & mesh, const eos_t * eos
 ) {
 	return update_state_from_pressure( mesh, eos );
@@ -54,7 +55,7 @@ int update_state_from_pressure_task(
 //! \param [in,out] mesh the mesh object
 //! \return 0 for success
 ////////////////////////////////////////////////////////////////////////////////
-int update_state_from_energy_task( 
+int update_state_from_energy_task(
   mesh_2d_t & mesh, const eos_t * eos
 ) {
 	return update_state_from_energy( mesh, eos );
@@ -68,8 +69,8 @@ int update_state_from_energy_task(
 //! \param [in,out] limit_string  a string describing the limiting time step
 //! \return 0 for success
 ////////////////////////////////////////////////////////////////////////////////
-int evaluate_time_step_task( 
-	mesh_2d_t & mesh, std::string & limit_string 
+int evaluate_time_step_task(
+	mesh_2d_t & mesh, std::string & limit_string
 ) {
   return evaluate_time_step( mesh, limit_string );
 }
@@ -80,7 +81,7 @@ int evaluate_time_step_task(
 //! \param [in,out] mesh the mesh object
 //! \return 0 for success
 ////////////////////////////////////////////////////////////////////////////////
-int estimate_nodal_state_task( mesh_2d_t & mesh ) 
+int estimate_nodal_state_task( mesh_2d_t & mesh )
 {
   return estimate_nodal_state( mesh );
 }
@@ -91,8 +92,8 @@ int estimate_nodal_state_task( mesh_2d_t & mesh )
 //! \param [in,out] mesh the mesh object
 //! \return 0 for success
 ////////////////////////////////////////////////////////////////////////////////
-int evaluate_nodal_state_task( 
-  mesh_2d_t & mesh, 
+int evaluate_nodal_state_task(
+  mesh_2d_t & mesh,
   const boundary_map_t<mesh_2d_t::num_dimensions> & boundary_map
 ) {
   return evaluate_nodal_state( mesh, boundary_map );
@@ -104,7 +105,7 @@ int evaluate_nodal_state_task(
 //! \param [in,out] mesh the mesh object
 //! \return 0 for success
 ////////////////////////////////////////////////////////////////////////////////
-int evaluate_residual_task( mesh_2d_t & mesh ) 
+int evaluate_residual_task( mesh_2d_t & mesh )
 {
   return evaluate_residual( mesh );
 }
@@ -115,8 +116,8 @@ int evaluate_residual_task( mesh_2d_t & mesh )
 //! \param [in,out] mesh the mesh object
 //!   \return 0 for success
 ////////////////////////////////////////////////////////////////////////////////
-solution_error_t apply_update_task( 
-  mesh_2d_t & mesh, real_t coef, real_t tolerance, bool first_time 
+solution_error_t apply_update_task(
+  mesh_2d_t & mesh, real_t coef, real_t tolerance, bool first_time
 ) {
   return apply_update( mesh, coef, tolerance, first_time );
 }
@@ -127,7 +128,7 @@ solution_error_t apply_update_task(
 //! \param [in,out] mesh the mesh object
 //! \return 0 for success
 ////////////////////////////////////////////////////////////////////////////////
-int move_mesh_task( mesh_2d_t & mesh, real_t coef ) 
+int move_mesh_task( mesh_2d_t & mesh, real_t coef )
 {
   return move_mesh( mesh, coef );
 }
@@ -138,7 +139,7 @@ int move_mesh_task( mesh_2d_t & mesh, real_t coef )
 //! \param [in,out] mesh the mesh object
 //! \return 0 for success
 ////////////////////////////////////////////////////////////////////////////////
-int save_coordinates_task( mesh_2d_t & mesh ) 
+int save_coordinates_task( mesh_2d_t & mesh )
 {
   return save_coordinates( mesh );
 }
@@ -149,7 +150,7 @@ int save_coordinates_task( mesh_2d_t & mesh )
 //! \param [in,out] mesh the mesh object
 //! \return 0 for success
 ////////////////////////////////////////////////////////////////////////////////
-int restore_coordinates_task( mesh_2d_t & mesh ) 
+int restore_coordinates_task( mesh_2d_t & mesh )
 {
   return restore_coordinates( mesh );
 }
@@ -160,7 +161,7 @@ int restore_coordinates_task( mesh_2d_t & mesh )
 //! \param [in,out] mesh the mesh object
 //! \return 0 for success
 ////////////////////////////////////////////////////////////////////////////////
-int save_solution_task( mesh_2d_t & mesh ) 
+int save_solution_task( mesh_2d_t & mesh )
 {
   return save_solution( mesh );
 }
@@ -171,7 +172,7 @@ int save_solution_task( mesh_2d_t & mesh )
 //! \param [in,out] mesh the mesh object
 //! \return 0 for success
 ////////////////////////////////////////////////////////////////////////////////
-int restore_solution_task( mesh_2d_t & mesh ) 
+int restore_solution_task( mesh_2d_t & mesh )
 {
   return restore_solution( mesh );
 }
