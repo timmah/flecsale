@@ -1457,7 +1457,7 @@ public:
     auto & this_bnd_verts = vert_sets_[ this_bnd ];
 
     // add the face tags and collect the attached edge and vertices
-    for ( auto f : faces() )
+    for ( auto f : faces() ){
       if ( p( f ) ) {
         // tag the face
         f->tag( this_bnd );
@@ -1472,7 +1472,8 @@ public:
           this_bnd_edges.reserve( this_bnd_edges.size() + es.size() );
           for ( auto e : es ) this_bnd_edges.emplace_back( e );
         } // dims
-      }
+      } // if f on bdy
+    } // for f in faces
 
     // need to remove duplicates from edge and vertex lists
     std::sort( this_bnd_edges.begin(), this_bnd_edges.end() );
