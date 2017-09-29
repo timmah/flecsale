@@ -14,7 +14,7 @@ hydro = {
   final_time = 0.2,
   max_steps = 1e6,
   initial_time_step = 1.,
-  CFL = { accoustic = 1., volume = 1., growth = 1.e3 },
+  CFL = { acoustic = 1., volume = 1., growth = 1.e3 },
 
   -- the mesh
   mesh = {
@@ -43,48 +43,44 @@ hydro = {
 
   -- the boundary conditions
   --
-  -- - both +ve and -ve side boundaries can be installed at once since 
+  -- - both +ve and -ve side boundaries can be installed at once since
   --   they will never overlap
   -- - if they did overlap, then you need to define them seperately or else
   --   its hard to count the number of different conditions on points or edges.
-  bcs = {
-
-    -- the +/- x-axis boundaries
-    [1] = { 
-      type = "symmetry", 
-      func = function (x,y,z,t)
-        if x == 0 or x == length[1] then
-          return true
-        else
-          return false
-        end
+  -- the +/- x-axis boundaries
+  bcs1 = {
+    type = "symmetry",
+    func = function (x,y,z,t)
+      if x == 0 or x == length[1] then
+        return true
+      else
+        return false
       end
-    },
+    end
+  },
 
-    -- the +/- y-axis boundaries
-    [2] = { 
-      type = "symmetry", 
-      func = function (x,y,z,t)
-        if y == 0 or y == length[2] then
-          return true
-        else
-          return false
-        end
+  -- the +/- y-axis boundaries
+  bcs2 = {
+    type = "symmetry",
+    func = function (x,y,z,t)
+      if y == 0 or y == length[2] then
+        return true
+      else
+        return false
       end
-    },
+    end
+  },
 
-    -- the +/- z-axis boundaries
-    [3] = { 
-      type = "symmetry", 
-      func = function (x,y,z,t)
-        if z == 0 or z == length[3] then
-          return true
-        else
-          return false
-        end
+  -- the +/- z-axis boundaries
+  bcs3 = {
+    type = "symmetry",
+    func = function (x,y,z,t)
+      if z == 0 or z == length[3] then
+        return true
+      else
+        return false
       end
-    }
-
-  } -- bcs
+    end
+  }
 
 } -- hydro

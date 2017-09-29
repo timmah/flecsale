@@ -28,7 +28,7 @@ hydro = {
   final_time = 1.0,
   max_steps = 20,
   initial_time_step = 1.e-5,
-  CFL = { accoustic = 0.25, volume = 0.1, growth = 1.01 },
+  CFL = { acoustic = 0.25, volume = 0.1, growth = 1.01 },
 
   -- the mesh
   mesh = {
@@ -52,7 +52,7 @@ hydro = {
     local v = {0,0}
     local p = 1.e-6
     local r = math.sqrt( x*x + y*y )
-    if r < delta_r then 
+    if r < delta_r then
       p = (gamma - 1) * d * e0 / delta_vol
     end
     return d, v, p
@@ -60,36 +60,30 @@ hydro = {
 
   -- the boundary conditions
   --
-  -- - both +ve and -ve side boundaries can be installed at once since 
+  -- - both +ve and -ve side boundaries can be installed at once since
   --   they will never overlap
   -- - if they did overlap, then you need to define them seperately or else
   --   its hard to count the number of different conditions on points or edges.
-  bcs = {
-
-    -- the +/- x-axis boundaries
-    [1] = { 
-      type = "symmetry", 
-      func = function (x,y,t)
-        if x == 0 or x == length[1] then
-          return true
-        else
-          return false
-        end
+  bcs1 = {
+    type = "symmetry",
+    func = function (x,y,t)
+      if x == 0 or x == length[1] then
+        return true
+      else
+        return false
       end
-    },
+    end,
+  },
 
-    -- the +/- y-axis boundaries
-    [2] = { 
-      type = "symmetry", 
-      func = function (x,y,t)
-        if y == 0 or y == length[2] then
-          return true
-        else
-          return false
-        end
+  bcs2 = {
+    type = "symmetry",
+    func = function (x,y,t)
+      if y == 0 or y == length[2] then
+        return true
+      else
+        return false
       end
-    },
-
-  } -- bcs
+    end,
+  }
 
 } -- hydro
