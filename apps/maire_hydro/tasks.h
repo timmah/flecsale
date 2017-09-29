@@ -19,9 +19,27 @@
 
 // system includes
  #include <iomanip>
- 
+
 namespace apps {
 namespace hydro {
+
+/**\brief Copy "vector" v to array a.
+ * Hack until we work out fixed-size vectors once and for all.*/
+template <typename vector_t, typename T = typename vector_t::value_type,
+          size_t sz = vector_t::length>
+inline
+void convert_vector(vector_t const &v, std::array<T,sz> &a){
+  for(size_t i = 0; i < sz; ++i){a[i] = v[i];}
+}
+
+/**\brief Copy array a to "vector" v.
+ * Hack until we work out fixed-size vectors once and for all.*/
+template <typename vector_t, typename T = typename vector_t::value_type,
+          size_t sz = vector_t::length>
+inline
+void convert_vector(std::array<T,sz> const &a,vector_t &v){
+  for (size_t i = 0; i < sz; ++i) { v[i] = a[i];}
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 //! \brief The main task for setting initial conditions
@@ -53,13 +71,22 @@ int initial_conditions( T & mesh, F && ics ) {
   auto cs = mesh.cells();
   auto num_cells = cs.size();
 
+  std::array<real_t,T::num_dimensions> a, b;
+
   // This doesn't work with lua input
   // #pragma omp parallel for
   for ( counter_t i=0; i<num_cells; ++i ) {
     auto c = cs[i];
-    // now copy the state to flexi
-    real_t d;
-    std::tie( d, v[c], p[c] ) = std::forward<F>(ics)( cell_xc[c], soln_time );
+    convert_vector(cell_xc[c],a);
+    // // now copy the state to flexi
+    // real_t d;
+    // std::tie( d, v[c], p[c] ) = std::forward<F>(ics)( cell_xc[c], soln_time );
+
+    auto t = std::forward<F>(ics)( a, soln_time );
+    real_t const d = std::get<0>(t);
+    convert_vector(std::get<1>(t),v[c]);
+    p[c] = std::get<2>(t);
+
     // set mass and volume now
     M[c] = d*cell_vol[c];
     V[c] = cell_vol[c];
@@ -149,7 +176,7 @@ int update_state_from_energy( T & mesh, const EOS * eos ) {
 //! \return 0 for success
 ////////////////////////////////////////////////////////////////////////////////
 template< typename T >
-int evaluate_time_step( T & mesh, std::string & limit_string ) 
+int evaluate_time_step( T & mesh, std::string & limit_string )
 {
 
   // type aliases
@@ -168,8 +195,8 @@ int evaluate_time_step( T & mesh, std::string & limit_string )
 
   auto time_step = flecsi_get_accessor( mesh, hydro, time_step, real_t, global, 0 );
   auto cfl = flecsi_get_accessor( mesh, hydro, cfl, time_constants_t, global, 0 );
- 
- 
+
+
   //----------------------------------------------------------------------------
   // Loop over each cell, computing the minimum time step,
   // which is also the maximum 1/dt
@@ -184,7 +211,7 @@ int evaluate_time_step( T & mesh, std::string & limit_string )
     auto c = cs[i];
 
     // compute the inverse of the time scale
-    auto dti =  sound_speed[c] / cell_min_length[c] / cfl->accoustic;
+    auto dti =  sound_speed[c] / cell_min_length[c] / cfl->acoustic;
     // check for the maximum value
     dt_acc_inv = std::max( dti, dt_acc_inv );
 
@@ -197,12 +224,11 @@ int evaluate_time_step( T & mesh, std::string & limit_string )
   } // cell
   //----------------------------------------------------------------------------
 
-
   assert( dt_acc_inv > 0 && "infinite delta t" );
   assert( dt_vol_inv > 0 && "infinite delta t" );
-  
+
   // get the individual cfls
-  auto dt_acc = cfl->accoustic / dt_acc_inv;
+  auto dt_acc = cfl->acoustic / dt_acc_inv;
   auto dt_vol = cfl->volume / dt_vol_inv;
   auto dt_growth = cfl->growth*(*time_step);
 
@@ -212,7 +238,7 @@ int evaluate_time_step( T & mesh, std::string & limit_string )
 
   switch ( std::distance( dts.begin(), it ) ) {
   case 0:
-    limit_string = "accoustic";
+    limit_string = "acoustic";
     break;
   case 1:
     limit_string = "volume";
@@ -223,12 +249,12 @@ int evaluate_time_step( T & mesh, std::string & limit_string )
   default:
     limit_string = "unknown";
     raise_runtime_error( "could not determine time step limit" );
-    break;    
+    break;
   };
 
   // invert dt and check against growth
   *time_step = *it;
-      
+
   return 0;
 
 }
@@ -284,19 +310,19 @@ int evaluate_nodal_state( T & mesh, const BC & boundary_map ) {
   using size_t = typename T::size_t;
   using real_t = typename T::real_t;
   using vector_t = typename T::vector_t;
-  using matrix_t = matrix_t< T::num_dimensions >; 
+  using matrix_t = matrix_t< T::num_dimensions >;
   using flux_data_t = flux_data_t<T::num_dimensions>;
   using eqns_t = eqns_t<T::num_dimensions>;
 
   // get the number of dimensions and create a matrix
   constexpr size_t dims = T::num_dimensions;
-  
+
   // access what we need
   auto cell_state = cell_state_accessor<T>( mesh );
   auto vertex_velocity = flecsi_get_accessor( mesh, hydro, node_velocity, vector_t, dense, 0 );
 
   auto wedge_facet_normal = mesh.wedge_facet_normals();
-  auto wedge_facet_area = mesh.wedge_facet_areas(); 
+  auto wedge_facet_area = mesh.wedge_facet_areas();
   auto wedge_facet_centroid = mesh.wedge_facet_centroids();
 
   auto npc = flecsi_get_accessor( mesh, hydro, corner_normal, vector_t, dense, 0 );
@@ -353,24 +379,24 @@ int evaluate_nodal_state( T & mesh, const BC & boundary_map ) {
 
       // iterate over the wedges in pairs
       auto ws = mesh.wedges(cn);
-      for ( auto w : ws ) 
+      for ( auto w : ws )
       {
         // get the first wedge normal
         const auto & n = wedge_facet_normal[w];
         const auto & l = wedge_facet_area[w];
         // the final matrix
         // Mpc = zc * ( lpc^- npc^-.npc^-  + lpc^+ npc^+.npc^+ );
-        math::outer_product( n, n, Mpc[j], zc*l );
+        flecsale::math::outer_product( n, n, Mpc[j], zc*l );
         // compute the pressure coefficient
-        for ( int d=0; d<T::num_dimensions; ++d ) 
+        for ( int d=0; d<T::num_dimensions; ++d )
           npc[cn][d] += l * n[d];
       } // wedges
 
       // add to the global matrix
       Mp += Mpc[j];
-      // compute a portion of the corner force and 
+      // compute a portion of the corner force and
       // add the pressure and velocity contributions to the system
-      ax_plus_y( Mpc[j], uc, Fpc[cn] );   
+      ax_plus_y( Mpc[j], uc, Fpc[cn] );
       for ( int d=0; d<dims; ++d ) {
         Fpc[cn][d] += pc * npc[cn][d];
         rhs[d] += Fpc[cn][d];
@@ -390,9 +416,9 @@ int evaluate_nodal_state( T & mesh, const BC & boundary_map ) {
       const auto & point_tags =  vt->tags();
 
       // first check if this has a prescribed velocity.  If it does, then nothing to do
-      auto vel_bc = std::find_if( 
-        point_tags.begin(), point_tags.end(), 
-        [&boundary_map](const auto & id) { 
+      auto vel_bc = std::find_if(
+        point_tags.begin(), point_tags.end(),
+        [&boundary_map](const auto & id) {
           return boundary_map.at(id)->has_prescribed_velocity();
         } );
       if ( vel_bc != point_tags.end() ) {
@@ -402,7 +428,7 @@ int evaluate_nodal_state( T & mesh, const BC & boundary_map ) {
 
       // otherwise, apply the pressure conditions
       auto bnd_wedges = filter_boundary( mesh.wedges(vt) );
-      for ( auto w : bnd_wedges ) 
+      for ( auto w : bnd_wedges )
       {
         auto f = mesh.faces(w).front();
         auto c = mesh.cells(w).front();
@@ -420,7 +446,7 @@ int evaluate_nodal_state( T & mesh, const BC & boundary_map ) {
           // SYMMETRY CONDITION
           else if ( b->has_symmetry() ) {
             const auto & n = wedge_facet_normal[w];
-            const auto & l = wedge_facet_area[w];          
+            const auto & l = wedge_facet_area[w];
             if ( symmetry_normals.count(tag) ) {
               auto & tmp = symmetry_normals[tag];
               for ( int d=0; d<T::num_dimensions; ++d )
@@ -428,7 +454,7 @@ int evaluate_nodal_state( T & mesh, const BC & boundary_map ) {
             }
             else {
               auto & tmp = symmetry_normals[tag];
-              for ( int d=0; d<T::num_dimensions; ++d )              
+              for ( int d=0; d<T::num_dimensions; ++d )
                 tmp[d] = l * n[d];
             }
           } // END CONDITIONS
@@ -440,7 +466,7 @@ int evaluate_nodal_state( T & mesh, const BC & boundary_map ) {
       //
       // no additional symmetry constraints
       if ( symmetry_normals.empty() ) {
-        vertex_velocity[vt]  = math::solve( Mp, rhs );
+        vertex_velocity[vt]  = flecsale::math::solve( Mp, rhs );
       }
       // add symmetry constraints and grow the system
       else {
@@ -454,27 +480,27 @@ int evaluate_nodal_state( T & mesh, const BC & boundary_map ) {
         std::vector< real_t > A( num_rows * num_rows, 0 ); // zerod
         std::vector< real_t > b( num_rows ); // zerod
         // create the views
-        auto A_view = utils::make_array_view( A, num_rows, num_rows );
-        auto M_view = utils::make_array_view( Mp.data(), num_dims, num_dims );
-        auto b_view = utils::make_array_view( b );
+        auto A_view = flecsale::utils::make_array_view( A, num_rows, num_rows );
+        auto M_view = flecsale::utils::make_array_view( Mp.data(), num_dims, num_dims );
+        auto b_view = flecsale::utils::make_array_view( b );
         // insert the old system into the new one
         for ( int d=0; d<num_dims; ++d )
           b_view[d] = rhs[d];
-        for ( int i=0; i<num_dims; i++ ) 
-          for ( int j=0; j<num_dims; j++ ) 
+        for ( int i=0; i<num_dims; i++ )
+          for ( int j=0; j<num_dims; j++ )
             A_view(i,j) = Mp(i,j);
         // insert each constraint
         for ( int i=0; i<num_dims; i++ ) {
           int j = num_dims;
           for ( const auto & n : symmetry_normals )
-            A_view( i, j++ ) = n.second[i];          
+            A_view( i, j++ ) = n.second[i];
         }
         int i = num_dims;
         for ( const auto & n : symmetry_normals ) {
-          for ( int j=0; j<num_dims; j++ ) 
-            A_view( i, j ) = n.second[j];          
+          for ( int j=0; j<num_dims; j++ )
+            A_view( i, j ) = n.second[j];
           i++;
-        }               
+        }
         // solve the system
         flecsale::linalg::qr( A_view, b_view );
         // copy the results back
@@ -490,8 +516,8 @@ int evaluate_nodal_state( T & mesh, const BC & boundary_map ) {
     // assert( abs(np) < eps && "error in norms" );
     // now solve for point velocity
     else {
-      
-      vertex_velocity[vt] = math::solve( Mp, rhs );
+
+      vertex_velocity[vt] = flecsale::math::solve( Mp, rhs );
 
     } // internal point
 
@@ -506,8 +532,8 @@ int evaluate_nodal_state( T & mesh, const BC & boundary_map ) {
       auto cl = mesh.cells(cn).front();
 
       // now add the vertex component to the force
-      matrix_vector( 
-        static_cast<real_t>(-1), Mpc[j], vertex_velocity[vt], 
+      matrix_vector(
+        static_cast<real_t>(-1), Mpc[j], vertex_velocity[vt],
         static_cast<real_t>(1), Fpc[cn]
       );
 
@@ -517,7 +543,7 @@ int evaluate_nodal_state( T & mesh, const BC & boundary_map ) {
   //----------------------------------------------------------------------------
 
   return 0;
-   
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -533,7 +559,7 @@ int32_t evaluate_residual( T & mesh ) {
   using counter_t = typename T::counter_t;
   using real_t = typename T::real_t;
   using vector_t = typename T::vector_t;
-  using matrix_t = matrix_t< T::num_dimensions >; 
+  using matrix_t = matrix_t< T::num_dimensions >;
   using flux_data_t = flux_data_t<T::num_dimensions>;
   using eqns_t = eqns_t<T::num_dimensions>;
 
@@ -541,7 +567,7 @@ int32_t evaluate_residual( T & mesh ) {
   auto cell_state = cell_state_accessor<T>( mesh );
 
   auto dudt = flecsi_get_accessor( mesh, hydro, cell_residual, flux_data_t, dense, 0 );
-  
+
   auto uv = flecsi_get_accessor( mesh, hydro, node_velocity, vector_t, dense, 0 );
 
   auto npc = flecsi_get_accessor( mesh, hydro, corner_normal, vector_t, dense, 0 );
@@ -549,14 +575,14 @@ int32_t evaluate_residual( T & mesh ) {
 
   //----------------------------------------------------------------------------
   // TASK: loop over each cell and compute the residual
-  
+
   // get the cells
   auto cs = mesh.cells();
   auto num_cells = cs.size();
 
   #pragma omp parallel for
   for ( counter_t i=0; i<num_cells; i++ ) {
-    
+
     // get the cell_t pointer
     auto cl = cs[i];
 
@@ -572,8 +598,8 @@ int32_t evaluate_residual( T & mesh ) {
       auto pt = mesh.vertices(cn).front();
       // add contribution
       eqns_t::compute_update( uv[pt], Fpc[cn], npc[cn], dudt[cl] );
-    }// corners    
-    
+    }// corners
+
   } // cell
   //----------------------------------------------------------------------------
 
@@ -588,7 +614,7 @@ int32_t evaluate_residual( T & mesh ) {
 ////////////////////////////////////////////////////////////////////////////////
 template< typename T >
 solution_error_t
-apply_update( T & mesh, real_t coef, real_t tolerance, bool first_time ) 
+apply_update( T & mesh, real_t coef, real_t tolerance, bool first_time )
 {
 
   // type aliases
@@ -617,13 +643,13 @@ apply_update( T & mesh, real_t coef, real_t tolerance, bool first_time )
   vector_t mom(0);
   real_t ener(0);
   bool bad_cell(false);
- 
+
   //----------------------------------------------------------------------------
   // Loop over each cell, scattering the fluxes to the cell
 
   auto cs = mesh.cells();
   auto num_cells = cs.size();
-  
+
   #pragma omp declare reduction( + : vector_t : omp_out += omp_in ) \
     initializer (omp_priv(omp_orig))
 
@@ -633,7 +659,7 @@ apply_update( T & mesh, real_t coef, real_t tolerance, bool first_time )
 
     // get the cell_t pointer
     auto cl = cs[i];
- 
+
     //--------------------------------------------------------------------------
     // Using the cell residual, update the state
 
@@ -656,7 +682,7 @@ apply_update( T & mesh, real_t coef, real_t tolerance, bool first_time )
       mom[d] += tmp;
       ener += 0.5 * tmp * vel[d];
     }
-    
+
     // check the solution quantities
     if ( ie < 0 || rho < 0 || cell_volume[cl] < 0 )
       bad_cell = true;
@@ -666,7 +692,7 @@ apply_update( T & mesh, real_t coef, real_t tolerance, bool first_time )
 
   // return unphysical if something went wrong
   if (bad_cell) {
-    std::cout << "Negative internal energy or density encountered in a cell" 
+    std::cout << "Negative internal energy or density encountered in a cell"
       << std::endl;
     return solution_error_t::unphysical;
   }
@@ -735,7 +761,7 @@ int move_mesh( T & mesh, real_t coef ) {
 
   // the time step factor
   auto fact = coef * (*delta_t);
- 
+
   // Loop over each cell, scattering the fluxes to the cell
   auto vs = mesh.vertices();
   auto num_verts = vs.size();
@@ -897,10 +923,10 @@ int restore_solution( T & mesh ) {
 //! \return 0 for success
 ////////////////////////////////////////////////////////////////////////////////
 template< typename T >
-int output( T & mesh, 
-                const std::string & prefix, 
-                const std::string & postfix, 
-                size_t output_freq ) 
+int output( T & mesh,
+                const std::string & prefix,
+                const std::string & postfix,
+                size_t output_freq )
 {
 
   if ( output_freq < 1 ) return 0;
@@ -912,11 +938,11 @@ int output( T & mesh,
   ss << prefix;
   ss << std::setw( 7 ) << std::setfill( '0' ) << cnt++;
   ss << "."+postfix;
-  
+
   cout << endl;
-  mesh::write_mesh( ss.str(), mesh );
+  flecsale::mesh::write_mesh( ss.str(), mesh );
   cout << endl;
-  
+
   return 0;
 }
 
