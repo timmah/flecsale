@@ -10,7 +10,7 @@ add_executable( hydro_3d
   ${FleCSI_RUNTIME_MAIN}
 )
 target_link_libraries( hydro_3d flecsale ${FleCSALE_LIBRARIES})
-add_definitions(-DRISTRA_DIMENSION=3)
+add_definitions(-DFLECSALE_DIMENSION=3)
 
 if (LUA_FOUND)
 

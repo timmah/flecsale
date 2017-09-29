@@ -9,13 +9,13 @@
 #pragma once
 
 // hydro includes
-#include "SimConfig.h"
-#include "types.h"
 #include "../common/exceptions.h"
 #include "../common/parse_arguments.h"
+#include "SimConfig.h"
+#include "input_types.h"
 #include "ristra/init_value.h"
-#include "ristra/inputs.h"
 #include "ristra/input_source.h"
+#include "types.h"
 
 // user includes
 #include <flecsale/mesh/mesh_utils.h>
@@ -41,7 +41,6 @@ int driver(int argc, char** argv)
 {
   using real_t = typename inputs_t::real_t;
   using string_t = typename inputs_t::string_t;
-  using ristra::init_value;
 
   // set exceptions
   enable_exceptions();
@@ -86,7 +85,7 @@ int driver(int argc, char** argv)
     return 1;
   }
 
-  ristra::input_engine inputs;
+  apps::hydro::input_engine inputs;
   // configure inputs
   // real_t targets
   init_value<real_t> iv_CFL("CFL");
@@ -103,10 +102,10 @@ int driver(int argc, char** argv)
   init_value<typename inputs_t::string_t> iv_eos_type("eos_type");
   init_value<typename inputs_t::string_t> iv_file("file");
   // array<real_t,dim> targets
-  init_value<ristra::input_traits::arr_d_r_t> iv_xmin("xmin");
-  init_value<ristra::input_traits::arr_d_r_t> iv_xmax("xmax");
+  init_value<apps::hydro::input_traits::arr_d_r_t> iv_xmin("xmin");
+  init_value<apps::hydro::input_traits::arr_d_r_t> iv_xmax("xmax");
   // array<size_t,dim> targets
-  init_value<ristra::input_traits::arr_d_s_t> iv_dimensions("dimensions");
+  init_value<apps::hydro::input_traits::arr_d_s_t> iv_dimensions("dimensions");
   // initial conditions functions
   init_value<SimConfig::ics_function_t> iv_ics_func("ics_func");
 

@@ -11,7 +11,7 @@
 
 // hydro includes
 #include "types.h"
-#include "ristra/inputs.h"
+#include "input_types.h"
 // system includes
 #include <iomanip>
 

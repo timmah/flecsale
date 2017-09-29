@@ -8,7 +8,7 @@
 #include "flecsale/eos/ideal_gas.h"
 #include "flecsale/mesh/burton/burton.h"
 #include "flecsale/mesh/factory.h"
-#include "ristra/inputs.h"
+#include "input_types.h"
 
 #include <memory>
 #include <tuple>
@@ -17,18 +17,18 @@ namespace apps::hydro{
 
 struct SimConfig{
   // types and class constants
-  using input_traits = ristra::input_traits;
+  using input_traits = apps::hydro::input_traits;
   static uint8_t constexpr dim = input_traits::dim;
 
-  using real_t = ristra::input_traits::real_t;
-  using string_t = ristra::input_traits::string_t;
+  using real_t = input_traits::real_t;
+  using string_t = input_traits::string_t;
   using eos_t = flecsale::eos::eos_base_t<real_t>;
   using eos_ptr_t = std::unique_ptr<eos_t>;
   using mesh_t = flecsale::mesh::burton::burton_mesh_t<dim>;
   using mesh_ptr_t = std::unique_ptr<mesh_t>;
-  using ics_function_t = ristra::input_traits::ics_function_t;
+  using ics_function_t = input_traits::ics_function_t;
 
-  explicit SimConfig(ristra::input_engine &inputs) : m_inputs(inputs) {}
+  explicit SimConfig(apps::hydro::input_engine &inputs) : m_inputs(inputs) {}
 
   /**\brief Construct an EOS object wrapped in unique_ptr.
    *
@@ -67,7 +67,7 @@ struct SimConfig{
   } // get_mesh
 
 private:
-  ristra::input_engine &m_inputs;
+  apps::hydro::input_engine &m_inputs;
 }; // SimConfig
 
 } // apps::hydro::

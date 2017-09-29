@@ -13,7 +13,7 @@
 #include "../types.h"
 #include "../tasks.h"
 #include "../SimConfig.h"
-#include "ristra/inputs.h"
+#include "../input_types.h"
 
 #include <flecsi/execution/context.h>
 #include <flecsi/execution/execution.h>
@@ -31,7 +31,7 @@ using mesh_3d_t = SimConfig::mesh_t;
 //! \return 0 for success
 ////////////////////////////////////////////////////////////////////////////////
 int initial_conditions_task(
-  mesh_3d_t & mesh, ristra::input_engine::ics_function_t ics
+  mesh_3d_t & mesh, input_traits::ics_function_t ics
 ) {
   return initial_conditions( mesh, ics );
 }

@@ -4,8 +4,8 @@
 
 #pragma once
 
-#include "ristra/inputs.h"        // input_traits
 #include "ristra/input_source.h"
+#include "types.h"
 
 #include <memory>
 
@@ -13,13 +13,13 @@ namespace apps::hydro{
 
 template <class T> using reg = ristra::hard_coded_source_t::registry<T>;
 
-inline ristra::input_traits::ics_return_t
-ics_func(ristra::input_traits::vector_t const &x,
-         ristra::input_traits::real_t const &t) {
-  ristra::input_traits::real_t d, p;
-  ristra::input_traits::vector_t v;
+inline apps::hydro::input_traits::ics_return_t
+ics_func(apps::hydro::input_traits::vector_t const &x,
+         apps::hydro::input_traits::real_t const &t) {
+  apps::hydro::input_traits::real_t d, p;
+  apps::hydro::input_traits::vector_t v;
   bool all_neg(true);
-  for(size_t i = 0; i < ristra::input_traits::dim; ++i){
+  for(size_t i = 0; i < apps::hydro::input_traits::dim; ++i){
     v[i] = 0.0;
     all_neg = all_neg && x[i] < 0.0;
   }
@@ -40,7 +40,7 @@ ics_func(ristra::input_traits::vector_t const &x,
 inline
 ristra::hard_coded_source_ptr_t
 base_problem() {
-  using input_traits = ristra::input_traits;
+  using input_traits = apps::hydro::input_traits;
   static uint8_t constexpr dim = input_traits::dim;
 
   using arrayr_t = input_traits::arr_d_r_t;

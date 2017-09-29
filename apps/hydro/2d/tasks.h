@@ -11,9 +11,9 @@
 
 // hydro includes
 #include "../SimConfig.h"
-#include "../types.h"
+#include "../input_types.h"
 #include "../tasks.h"
-#include "ristra/inputs.h"
+#include "../types.h"
 
 #include <flecsi/execution/context.h>
 #include <flecsi/execution/execution.h>
@@ -31,7 +31,7 @@ using mesh_2d_t = SimConfig::mesh_t;
 //! \return 0 for success
 ////////////////////////////////////////////////////////////////////////////////
 int initial_conditions_task(
-  mesh_2d_t & mesh, ristra::input_engine::ics_function_t ics
+  mesh_2d_t & mesh, input_traits::ics_function_t ics
 ) {
   return initial_conditions( mesh, ics );
 }
@@ -47,7 +47,7 @@ int initial_conditions_task(
 int update_state_from_pressure_task(
   const mesh_2d_t & mesh, const eos_t * eos
 ) {
-	return update_state_from_pressure( mesh, eos );
+  return update_state_from_pressure( mesh, eos );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -61,7 +61,7 @@ int update_state_from_pressure_task(
 int update_state_from_energy_task(
   mesh_2d_t & mesh, const eos_t * eos
 ) {
-	return update_state_from_energy( mesh, eos );
+  return update_state_from_energy( mesh, eos );
 }
 
 
