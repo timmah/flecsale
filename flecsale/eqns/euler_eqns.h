@@ -5,7 +5,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 ///
 /// \file
-/// 
+///
 /// \brief The desrciption of the euler equations.
 ///
 ////////////////////////////////////////////////////////////////////////////////
@@ -52,24 +52,22 @@ public:
   struct equations {
 
     //! \brief the variables in the primitive state
-    enum index : size_t { 
-      mass = 0, 
-      momentum, 
+    enum index : size_t {
+      mass = 0,
+      momentum,
       energy = 1 + N,
       total
     };
 
     //! \brief  The type for holding the state data (mass, momentum, and energy).
-    //! 
+    //!
     //! data_t is a std::tuple with a real_t for mass, a vector_t for momentum
     //! and a real_t for energy.  This needs to correspond to index
     //! or there may be problems
     using data_t = math::array<real_t, index::total>;
 
     //! \brief the number of equations
-    static constexpr size_t number(void)
-    {  return index::total; }
-
+    static constexpr size_t number(void) { return index::total; }
   };
 
   //============================================================================
@@ -81,14 +79,14 @@ public:
     //! \brief  The type for holding the state data.
     //!
     //! This needs to correspond with index or they may be problems.
-    using data_t = 
+    using data_t =
       math::tuple<real_t,vector_t,real_t,real_t,real_t,real_t>;
 
     //! \brief the variables in the primitive state
     enum index : size_t
-    { 
-      density = 0, 
-      velocity, 
+    {
+      density = 0,
+      velocity,
       pressure,
       internal_energy,
       temperature,
@@ -99,7 +97,7 @@ public:
     //! \brief the number of variables
     static constexpr size_t number(void)
     {  return index::total; }
-    
+
   };
 
 
@@ -120,11 +118,11 @@ public:
   //============================================================================
   //! \brief Accessors for various quantities.
   //!
-  //! Wrapper functions are only used for accessing either independant or 
+  //! Wrapper functions are only used for accessing either independant or
   //! derived quantities.  Modifictions of variables should access
-  //! the element of the state_data_t explicitily, because it should remain 
-  //! clear exactly what variable is being set.  Does 
-  //!   set_density(val) 
+  //! the element of the state_data_t explicitily, because it should remain
+  //! clear exactly what variable is being set.  Does
+  //!   set_density(val)
   //! set density explicitly? Or does it really set temperature and pressure?
   //! But it is clear that
   //!   get<variables::index::density> = val
@@ -165,15 +163,15 @@ public:
   //! \copydoc density
   template< typename U >
   static auto total_energy( U && u ) noexcept
-  { 
+  {
     using math::dot_product;
-    return internal_energy( std::forward<U>(u) ) + 
-      0.5 * dot_product( velocity( std::forward<U>(u)), 
+    return internal_energy( std::forward<U>(u) ) +
+      0.5 * dot_product( velocity( std::forward<U>(u)),
                          velocity(std::forward<U>(u)) );
   }
 
   //============================================================================
-  //! \brief Compute the fastest moving wavespeed, i.e. the maximum absolute 
+  //! \brief Compute the fastest moving wavespeed, i.e. the maximum absolute
   //!        value.
   //! \param [in] u     The solution state.
   //! \param [in] norm  The normal vector aligned in the direction of interest.
@@ -201,14 +199,14 @@ public:
     using math::get;
 
     auto vn = math::dot_product( velocity(std::forward<U>(u)), norm );
-    
+
     flux_data_t eig;
-    
+
     eig[equations::index::mass] = vn - sound_speed(std::forward<U>(u));
-    for ( int i=0; i<N; ++i )  
+    for ( int i=0; i<N; ++i )
       eig[equations::index::momentum+i] = vn;
     eig[equations::index::energy] = vn + sound_speed(std::forward<U>(u));
-    
+
     return eig;
   }
 
@@ -236,8 +234,8 @@ public:
   //! \return ur - ul
   //============================================================================
   template< typename UL, typename UR >
-  static auto solution_delta( 
-    UL && ul, UR && ur 
+  static auto solution_delta(
+    UL && ul, UR && ur
   ) {
     using math::get;
 
@@ -254,10 +252,10 @@ public:
     flux_data_t du;
 
     du[equations::index::mass] = mass_r - mass_l;
-    
-    for ( int i=0; i<N; ++i )  
+
+    for ( int i=0; i<N; ++i )
       du[equations::index::momentum+i] = mass_r*vel_r[i] - mass_l*vel_l[i];
-    
+
     du[equations::index::energy] = ener_r - ener_l;
 
     return du;
@@ -272,7 +270,7 @@ public:
   //! \return The flux alligned with the normal direction.
   //============================================================================
   template <typename U, typename V>
-  static auto flux( U && u, const V & norm )
+  static flux_data_t flux( U && u, const V & norm )
   {
 
     using math::get;
@@ -283,25 +281,26 @@ public:
     const auto & vel = velocity( std::forward<U>(u) );
     const auto & p   = pressure( std::forward<U>(u) );
     const auto & et  = total_energy( std::forward<U>(u) );
-      
+
     assert( rho > 0  );
 
     auto v_dot_n = dot_product( vel, norm );
-      
+
     // explicitly set the individual elements, and it is clear what is
     // being set by using static indexing instead of wrapper functions
     flux_data_t f;
     auto mass_flux = rho * v_dot_n;
 
-    f[equations::index::mass] = mass_flux;     
+    f[equations::index::mass] = mass_flux;
 
-    for ( int i=0; i<N; i++ ) 
-      f[equations::index::momentum+i] = mass_flux * vel[i] + p*norm[i];
+    for (int i = 0; i < N; i++){
+      f[equations::index::momentum + i] = mass_flux * vel[i] + p * norm[i];
+    }
 
     f[equations::index::energy] = mass_flux * (et + p/rho);
 
     return f;
-  }
+  } // flux
 
   //============================================================================
   //! \brief The flux at a wall.
@@ -317,7 +316,7 @@ public:
     auto pn = p*norm;
     flux_data_t f;
     f[equations::index::mass] = 0;
-    for ( int i=0; i<N; i++ ) 
+    for ( int i=0; i<N; i++ )
       f[equations::index::momentum+i] = pressure(u) * norm[i];
     f[equations::index::energy] = 0;
     return f;
@@ -335,10 +334,10 @@ public:
   {
     using math::get;
 
-    // access independant or derived quantities 
+    // access independant or derived quantities
     auto d = density ( std::forward<U>(u) );
     auto p = pressure( std::forward<U>(u) );
-      
+
     assert( d > 0  );
     assert( p > 0  );
 
@@ -361,10 +360,10 @@ public:
   {
     using math::get;
 
-    // access independant or derived quantities 
+    // access independant or derived quantities
     auto d  = density ( std::forward<U>(u) );
     auto ie = internal_energy( std::forward<U>(u) );
-      
+
     assert( d > 0  );
     assert( ie > 0  );
 
@@ -389,22 +388,22 @@ public:
     // compute the change in density and energy
     auto den0 = density(std::forward<U>(u));
     auto mass = den0 + du[equations::index::mass];
-    auto ener = den0*total_energy(std::forward<U>(u)) + 
+    auto ener = den0*total_energy(std::forward<U>(u)) +
                 du[equations::index::energy];
 
     // recompute solution quantities
     auto inv_mass = 1 / mass;
-    
+
     auto & vel = velocity(std::forward<U>(u));
     for ( int i=0; i<N; ++i ) {
-      auto mom = den0*vel[i] + 
+      auto mom = den0*vel[i] +
                  std::forward<F>(du)[equations::index::momentum + i];
       vel[i] = mom * inv_mass;
     }
-    
-    density(std::forward<U>(u)) = mass;    
 
-    internal_energy(u) = 
+    density(std::forward<U>(u)) = mass;
+
+    internal_energy(u) =
       ener*inv_mass - 0.5 * dot_product( vel, vel );
 
   }
