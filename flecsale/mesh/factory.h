@@ -108,6 +108,15 @@ box( std::array<size_t,2> const &num_cells,
   return box<T>(num_cells[0],num_cells[1],mins[0],mins[1],maxs[0],maxs[1]);
 }
 
+template< typename T >
+std::enable_if_t< T::num_dimensions == 2, T >
+box( flecsale::math::array<size_t,2> const &num_cells,
+     flecsale::math::array<typename T::real_t,2> const & mins,
+     flecsale::math::array<typename T::real_t,2> const & maxs)
+{
+  return box<T>(num_cells[0],num_cells[1],mins[0],mins[1],maxs[0],maxs[1]);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 //! \brief Create a box mesh
 //!
@@ -212,6 +221,17 @@ std::enable_if_t<T::num_dimensions == 3, T>
 box(std::array<size_t, 3> const &num_cells,
     std::array<typename T::real_t, 3> const &mins,
     std::array<typename T::real_t, 3> const &maxs) {
+  return box<T>(
+    num_cells[0], num_cells[1], num_cells[2],
+    mins[0], mins[1], mins[2],
+    maxs[0], maxs[1], maxs[2]);
+}
+
+template <typename T>
+std::enable_if_t<T::num_dimensions == 3, T>
+box(flecsale::math::array<size_t, 3> const &num_cells,
+    flecsale::math::array<typename T::real_t, 3> const &mins,
+    flecsale::math::array<typename T::real_t, 3> const &maxs) {
   return box<T>(
     num_cells[0], num_cells[1], num_cells[2],
     mins[0], mins[1], mins[2],
