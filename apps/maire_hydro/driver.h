@@ -273,14 +273,12 @@ int driver(int argc, char** argv)
   {
     input_traits::bcs_t * bc_type = bc_pair.first.get();
     auto bc_function = bc_pair.second;
-    std::array<real_t,num_dimensions> tims_a;
     auto bc_key = mesh.install_boundary(
       [=](auto f)
       {
         if ( f->is_boundary() ) {
           vector_t fx( f->midpoint());
-          fx.swap( const_cast<std::array<real_t,num_dimensions>&>(tims_a));
-          return bc_function(tims_a, soln_time);
+          return bc_function(fx, soln_time);
         }
         return false;
       }

@@ -35,16 +35,22 @@ struct maire_input_traits{
   using vector_t = std::array<real_t,dim>;
   using arr_d_r_t = std::array<real_t,dim>;
   using arr_d_s_t = std::array<size_t,dim>;
-  using ics_return_t   = std::tuple<real_t,arr_d_r_t,real_t>;
+
+  using flecsale_vector_t = flecsale::math::array<real_t,dim>;
+  using flecsale_arr_d_r_t = flecsale::math::array<real_t,dim>;
+  using flecsale_arr_d_s_t = flecsale::math::array<size_t,dim>;
+
+
+  using ics_return_t   = std::tuple<real_t,flecsale_arr_d_r_t,real_t>;
   using ics_function_t =
-    std::function<ics_return_t(arr_d_r_t const &, real_t const & t)>;
+    std::function<ics_return_t(flecsale_arr_d_r_t const &, real_t const & t)>;
 
   //! the bcs function type
   //! \{
   using bcs_t = apps::hydro::boundary_condition_t<dim>;
   using bcs_ptr_t = std::shared_ptr< bcs_t >;
   using bcs_function_t =
-    std::function< bool(const vector_t & x, const real_t & t) >;
+    std::function< bool(const flecsale_vector_t & x, const real_t & t) >;
   using bcs_pair = std::pair< bcs_ptr_t, bcs_function_t >;
   using bcs_list_t = std::vector< bcs_pair>;
   //! \}

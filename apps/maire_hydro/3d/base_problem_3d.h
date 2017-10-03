@@ -24,7 +24,7 @@ namespace detail {
 
 // This is the Sedov 2D Lua initial condition
 inline input_traits::ics_return_t
-ics_func(input_traits::vector_t const &x,
+ics_func(input_traits::flecsale_vector_t const &x,
          input_traits::real_t const &t) {
   using real_t = input_traits::real_t;
   using arr_d_r_t = input_traits::arr_d_r_t;
@@ -44,7 +44,7 @@ ics_func(input_traits::vector_t const &x,
   constexpr real_t p_large_r = 1.0e-6;
 
   real_t sum_sq = 0.0;
-  arr_d_r_t v;
+  input_traits::flecsale_arr_d_r_t v;
   for(size_t i = 0; i < input_traits::dim; ++i){
     v[i] = 0.0;
     sum_sq += x[i] * x[i];
@@ -54,19 +54,19 @@ ics_func(input_traits::vector_t const &x,
   return std::make_tuple(d, v, p);
 } // ics_func_2d
 
-bool bc_function_1(input_traits::vector_t const &x,
+bool bc_function_1(input_traits::flecsale_vector_t const &x,
                    input_traits::real_t const &/*t*/){
   if(0.0 == x[0] || detail::length[0] == x[0]) return true;
   return false;
 }
 
-bool bc_function_2(input_traits::vector_t const &x,
+bool bc_function_2(input_traits::flecsale_vector_t const &x,
                    input_traits::real_t const &/*t*/){
   if(0.0 == x[1] || detail::length[1] == x[1]) return true;
   return false;
 }
 
-bool bc_function_3(input_traits::vector_t const &x,
+bool bc_function_3(input_traits::flecsale_vector_t const &x,
                    input_traits::real_t const &/*t*/){
   if(0.0 == x[2] || detail::length[2] == x[2]) return true;
   return false;

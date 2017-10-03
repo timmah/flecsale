@@ -23,23 +23,23 @@
 namespace apps {
 namespace hydro {
 
-/**\brief Copy "vector" v to array a.
- * Hack until we work out fixed-size vectors once and for all.*/
-template <typename vector_t, typename T = typename vector_t::value_type,
-          size_t sz = vector_t::length>
-inline
-void convert_vector(vector_t const &v, std::array<T,sz> &a){
-  for(size_t i = 0; i < sz; ++i){a[i] = v[i];}
-}
-
-/**\brief Copy array a to "vector" v.
- * Hack until we work out fixed-size vectors once and for all.*/
-template <typename vector_t, typename T = typename vector_t::value_type,
-          size_t sz = vector_t::length>
-inline
-void convert_vector(std::array<T,sz> const &a,vector_t &v){
-  for (size_t i = 0; i < sz; ++i) { v[i] = a[i];}
-}
+///**\brief Copy "vector" v to array a.
+// * Hack until we work out fixed-size vectors once and for all.*/
+//template <typename vector_t, typename T = typename vector_t::value_type,
+//          size_t sz = vector_t::length>
+//inline
+//void convert_vector(vector_t const &v, std::array<T,sz> &a){
+//  for(size_t i = 0; i < sz; ++i){a[i] = v[i];}
+//}
+//
+///**\brief Copy array a to "vector" v.
+// * Hack until we work out fixed-size vectors once and for all.*/
+//template <typename vector_t, typename T = typename vector_t::value_type,
+//          size_t sz = vector_t::length>
+//inline
+//void convert_vector(std::array<T,sz> const &a,vector_t &v){
+//  for (size_t i = 0; i < sz; ++i) { v[i] = a[i];}
+//}
 
 ////////////////////////////////////////////////////////////////////////////////
 //! \brief The main task for setting initial conditions
@@ -71,22 +71,12 @@ int initial_conditions( T & mesh, F && ics ) {
   auto cs = mesh.cells();
   auto num_cells = cs.size();
 
-  std::array<real_t,T::num_dimensions> a, b;
-
   // This doesn't work with lua input
   // #pragma omp parallel for
   for ( counter_t i=0; i<num_cells; ++i ) {
     auto c = cs[i];
-    convert_vector(cell_xc[c],a);
-    // // now copy the state to flexi
-    // real_t d;
-    // std::tie( d, v[c], p[c] ) = std::forward<F>(ics)( cell_xc[c], soln_time );
-
-    auto t = std::forward<F>(ics)( a, soln_time );
-    real_t const d = std::get<0>(t);
-    convert_vector(std::get<1>(t),v[c]);
-    p[c] = std::get<2>(t);
-
+    real_t d;
+    std::tie( d, v[c], p[c] ) = std::forward<F>(ics)( cell_xc[c], soln_time );
     // set mass and volume now
     M[c] = d*cell_vol[c];
     V[c] = cell_vol[c];
