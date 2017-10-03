@@ -10,7 +10,7 @@
 #pragma once
 
 #include "ristra/input_source.h"
-#include "input_types.h"
+#include "../input_types.h"
 #include <memory>
 
 namespace apps::hydro{
@@ -75,58 +75,59 @@ bool bc_function_3(input_traits::vector_t const &x,
 /**\brief Create a hard-coded problem to provide defaults.
  *
  * \return unique_ptr<ristra::hard_coded_test_problem> */
-inline ristra::hard_coded_source_ptr_t base_problem_3d() {
-  using input_traits = apps::hydro::input_traits;
-  static uint8_t constexpr dim = input_traits::dim;
+struct base_problem_3d{
+  inline ristra::hard_coded_source_ptr_t operator()() {
+    using input_traits = apps::hydro::input_traits;
+    static uint8_t constexpr dim = input_traits::dim;
 
-  using arrayr_t = input_traits::arr_d_r_t;
-  using arrays_t = input_traits::arr_d_s_t;
-  using string_t = input_traits::string_t;
-  using real_t = input_traits::real_t;
-  using ics_function_t = input_traits::ics_function_t;
-  using bcs_function_t = input_traits::bcs_function_t;
+    using arrayr_t = input_traits::arr_d_r_t;
+    using arrays_t = input_traits::arr_d_s_t;
+    using string_t = input_traits::string_t;
+    using real_t = input_traits::real_t;
+    using ics_function_t = input_traits::ics_function_t;
+    using bcs_function_t = input_traits::bcs_function_t;
 
-  ristra::hard_coded_source_ptr_t phcs(ristra::mk_hard_coded_source());
-  ristra::hard_coded_source_t &hcs(*phcs);
-  // register real_t defaults
-  reg<real_t> const real_reg = {{"CFL_acoustic", 0.25},
-                                {"CFL_volume",0.1},
-                                {"CFL_growth",1.01},
-                                {"final_time", 1.0},
-                                {"initial_time_step",1.0e-5},
-                                {"gas_constant", 1.4},
-                                {"specific_heat", 1.0}};
-  hcs.set_registry<real_t>(real_reg);
-  // register size_t defaults
-  reg<size_t> const size_reg = {{"output_freq", 20u}, {"max_steps", 20u}};
-  hcs.set_registry<size_t>(size_reg);
-  // register string_t defaults
-  reg<string_t> const string_reg = {{"eos_type", "ideal_gas"},
-                                    {"prefix", "sedov_3d"},
-                                    {"suffix", "dat"},
-                                    {"mesh_type", "box"}
-                                   ,{"bc_type_1","symmetry"}
-                                   ,{"bc_type_2","symmetry"}
-                                   ,{"bc_type_3","symmetry"}
-                                  };
-  hcs.set_registry<string_t>(string_reg);
-  // register array<size_t> defaults
-  reg<arrays_t> const arrays_reg = {{"dimensions",detail::num_cells}};
-  hcs.set_registry<arrays_t>(arrays_reg);
-  // register array<real_t> defaults
-  reg<arrayr_t> const arrayr_reg = {{"xmin", {0.0,0.0,0.0}},
-                                      {"xmax", detail::length}};
-  hcs.set_registry<arrayr_t>(arrayr_reg);
-  // register default initial condition, boundary condition functions
-  hcs.set_registry<ics_function_t>({{"ics_func", ics_func}});
-  hcs.set_registry<bcs_function_t>({{"bc_function_1",bc_function_1}
-                                   ,{"bc_function_2",bc_function_2}
-                                   ,{"bc_function_3",bc_function_3}
-                                  });
-  // transfer to caller
-  return std::move(phcs);
-} // base_problem_2d
-
+    ristra::hard_coded_source_ptr_t phcs(ristra::mk_hard_coded_source());
+    ristra::hard_coded_source_t &hcs(*phcs);
+    // register real_t defaults
+    reg<real_t> const real_reg = {{"CFL_acoustic", 0.25},
+                                  {"CFL_volume",0.1},
+                                  {"CFL_growth",1.01},
+                                  {"final_time", 1.0},
+                                  {"initial_time_step",1.0e-5},
+                                  {"gas_constant", 1.4},
+                                  {"specific_heat", 1.0}};
+    hcs.set_registry<real_t>(real_reg);
+    // register size_t defaults
+    reg<size_t> const size_reg = {{"output_freq", 20u}, {"max_steps", 20u}};
+    hcs.set_registry<size_t>(size_reg);
+    // register string_t defaults
+    reg<string_t> const string_reg = {{"eos_type", "ideal_gas"},
+                                      {"prefix", "sedov_3d"},
+                                      {"suffix", "dat"},
+                                      {"mesh_type", "box"}
+                                     ,{"bc_type_1","symmetry"}
+                                     ,{"bc_type_2","symmetry"}
+                                     ,{"bc_type_3","symmetry"}
+                                    };
+    hcs.set_registry<string_t>(string_reg);
+    // register array<size_t> defaults
+    reg<arrays_t> const arrays_reg = {{"dimensions",detail::num_cells}};
+    hcs.set_registry<arrays_t>(arrays_reg);
+    // register array<real_t> defaults
+    reg<arrayr_t> const arrayr_reg = {{"xmin", {0.0,0.0,0.0}},
+                                        {"xmax", detail::length}};
+    hcs.set_registry<arrayr_t>(arrayr_reg);
+    // register default initial condition, boundary condition functions
+    hcs.set_registry<ics_function_t>({{"ics_func", ics_func}});
+    hcs.set_registry<bcs_function_t>({{"bc_function_1",bc_function_1}
+                                     ,{"bc_function_2",bc_function_2}
+                                     ,{"bc_function_3",bc_function_3}
+                                    });
+    // transfer to caller
+    return std::move(phcs);
+  } // operator()
+}; // struct base_problem_3d
 
 } // apps::hydro
 

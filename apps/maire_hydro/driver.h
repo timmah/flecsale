@@ -10,8 +10,7 @@
 // hydro incdludes
 #include "../common/exceptions.h"
 #include "../common/parse_arguments.h"
-#include "SimConfig.h"
-#include "base_problem.h"
+#include "sim_config.h"
 #include "input_types.h"
 #include "ristra/init_value.h"
 #include "ristra/input_source.h"
@@ -134,7 +133,8 @@ int driver(int argc, char** argv)
 
   // 2. Register inputs sources
   // default problem
-  auto phcs(base_problem());
+  base_problem bp;
+  auto phcs(bp());
   inputs.register_hard_coded_source(phcs.release());
   // get the input file, if any
   auto input_file_name = args.count("f") ? args.at("f") : std::string();
