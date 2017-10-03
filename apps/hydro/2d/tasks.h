@@ -10,8 +10,8 @@
 #pragma once
 
 // hydro includes
-#include "../SimConfig.h"
 #include "../input_types.h"
+#include "../sim_config.h"
 #include "../tasks.h"
 #include "../types.h"
 

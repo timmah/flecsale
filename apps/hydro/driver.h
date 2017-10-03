@@ -1,17 +1,18 @@
 /*~-------------------------------------------------------------------------~~*
- * Copyright (c) 2016 Los Alamos National Laboratory, LLC
+ * Copyright (c) 2017 Los Alamos National Laboratory, LLC
  * All rights reserved
  *~-------------------------------------------------------------------------~~*/
 ///////////////////////////////////////////////////////////////////////////////
 /// \file
 /// \brief This is the main driver for the hydro solver.
 ///////////////////////////////////////////////////////////////////////////////
+
 #pragma once
 
 // hydro includes
 #include "../common/exceptions.h"
 #include "../common/parse_arguments.h"
-#include "SimConfig.h"
+#include "sim_config.h"
 #include "input_types.h"
 #include "ristra/init_value.h"
 #include "ristra/input_source.h"
@@ -36,7 +37,7 @@ namespace hydro {
 ///////////////////////////////////////////////////////////////////////////////
 //! \brief A sample test of the hydro solver
 ///////////////////////////////////////////////////////////////////////////////
-template< typename inputs_t >
+template< typename inputs_t, typename base_problem>
 int driver(int argc, char** argv)
 {
   using real_t = typename inputs_t::real_t;
@@ -110,7 +111,8 @@ int driver(int argc, char** argv)
   init_value<SimConfig::ics_function_t> iv_ics_func("ics_func");
 
   // register inputs sources
-  auto phcs(base_problem());
+  base_problem bp;
+  auto phcs(bp());
   inputs.register_hard_coded_source(phcs.release());
   // get the input filename
   auto input_file_name = args.count("f") ? args.at("f") : std::string();

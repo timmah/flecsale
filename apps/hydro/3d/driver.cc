@@ -11,10 +11,10 @@
 // tasks.h must be first!
 #include "tasks.h"
 
-#include "../SimConfig.h"
-#include "../base_problem.h"
-#include "../driver_new.h"
+#include "../driver.h"
 #include "../input_types.h"
+#include "../sim_config.h"
+#include "base_problem_3d.h"
 
 namespace flecsi {
 namespace execution {
@@ -24,7 +24,8 @@ namespace execution {
 ///////////////////////////////////////////////////////////////////////////////
 void driver(int argc, char** argv)
 {
-  apps::hydro::driver<apps::hydro::input_engine>(argc, argv);
+  apps::hydro::driver<apps::hydro::input_engine, apps::hydro::base_problem_3d>(
+      argc, argv);
 }
 
 } // namespace

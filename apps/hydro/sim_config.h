@@ -1,6 +1,11 @@
-// SimConfig.h
-// Sep 01, 2017
-// (c) Copyright 2017 LANSLLC, all rights reserved
+/*~-------------------------------------------------------------------------~~*
+ * Copyright (c) 2017 Los Alamos National Laboratory, LLC
+ * All rights reserved
+ *~-------------------------------------------------------------------------~~*/
+///////////////////////////////////////////////////////////////////////////////
+/// \file
+/// \brief Simulation configuration for hydro sample applications.
+///////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 

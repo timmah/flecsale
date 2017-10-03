@@ -10,10 +10,10 @@
 #pragma once
 
 // hydro includes
-#include "../types.h"
-#include "../tasks.h"
-#include "../SimConfig.h"
 #include "../input_types.h"
+#include "../sim_config.h"
+#include "../tasks.h"
+#include "../types.h"
 
 #include <flecsi/execution/context.h>
 #include <flecsi/execution/execution.h>
@@ -47,7 +47,7 @@ int initial_conditions_task(
 int update_state_from_pressure_task(
   mesh_3d_t & mesh, const eos_t * eos
 ) {
-	return update_state_from_pressure( mesh, eos );
+  return update_state_from_pressure( mesh, eos );
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -61,7 +61,7 @@ int update_state_from_pressure_task(
 int update_state_from_energy_task(
   mesh_3d_t & mesh, const eos_t * eos
 ) {
-	return update_state_from_energy( mesh, eos );
+  return update_state_from_energy( mesh, eos );
 }
 
 
