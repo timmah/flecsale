@@ -1,6 +1,11 @@
-// base_problem.h
-// Sep 01, 2017
-// (c) Copyright 2017 LANSLLC, all rights reserved
+/*~-------------------------------------------------------------------------~~*
+ * Copyright (c) 2016 Los Alamos National Laboratory, LLC
+ * All rights reserved
+ *~-------------------------------------------------------------------------~~*/
+////////////////////////////////////////////////////////////////////////////////
+/// \file
+/// \brief Hard-coded defaults for maire-hydro 2D
+////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 
@@ -59,10 +64,10 @@ bool bc_function_2(input_traits::vector_t const &x,
   return false;
 }
 
-    /**\brief Create a hard-coded problem to provide defaults.
-     *
-     * \return unique_ptr<ristra::hard_coded_test_problem> */
-    inline ristra::hard_coded_source_ptr_t base_problem() {
+/**\brief Create a hard-coded problem to provide defaults.
+ *
+ * \return unique_ptr<ristra::hard_coded_test_problem> */
+inline ristra::hard_coded_source_ptr_t base_problem_2d() {
   using input_traits = apps::hydro::input_traits;
   static uint8_t constexpr dim = input_traits::dim;
 

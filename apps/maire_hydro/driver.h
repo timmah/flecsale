@@ -8,9 +8,14 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 // hydro incdludes
-#include "types.h"
 #include "../common/exceptions.h"
 #include "../common/parse_arguments.h"
+#include "SimConfig.h"
+#include "base_problem.h"
+#include "input_types.h"
+#include "ristra/init_value.h"
+#include "ristra/input_source.h"
+#include "types.h"
 
 // user includes
 #include <flecsale/eos/ideal_gas.h>
@@ -29,13 +34,25 @@ namespace hydro {
 
 ///////////////////////////////////////////////////////////////////////////////
 //! \brief A sample test of the hydro solver
+//! \tparam base_problem: function that returns a pointer to ristra::hard_coded_source
 ///////////////////////////////////////////////////////////////////////////////
-template< typename inputs_t >
-int driver(int argc, char** argv) 
+
+template< typename inputs_t, typename base_problem>
+int driver(int argc, char** argv)
 {
+  using real_t = typename inputs_t::real_t;
+  using string_t = typename inputs_t::string_t;
+  // using ::init_value;
+  using mesh_t = SimConfig::mesh_t;
+  using vector_t = typename mesh_t::vector_t;
+  // type aliases
+  using matrix_t = matrix_t< mesh_t::num_dimensions >;
+  using flux_data_t = flux_data_t< mesh_t::num_dimensions >;
+  constexpr auto num_dimensions(mesh_t::num_dimensions);
+  using ics_function_t = apps::hydro::input_traits::ics_function_t;
+  using bcs_function_t = apps::hydro::input_traits::bcs_function_t;
 
-
-  // set exceptions 
+  // set exceptions
   enable_exceptions();
 
   //===========================================================================
@@ -44,7 +61,7 @@ int driver(int argc, char** argv)
 
   // the usage stagement
   auto print_usage = [&argv]() {
-    std::cout << "Usage: " << argv[0] 
+    std::cout << "Usage: " << argv[0]
               << " [--file INPUT_FILE]"
               << " [--help]"
               << std::endl << std::endl;
@@ -69,43 +86,116 @@ int driver(int argc, char** argv)
   if ( args.count("h") ) {
     print_usage();
     return 0;
-  } 
+  }
   else if ( args.count("?") ) {
     print_usage();
     return 1;
   }
- 
-  // get the input file
-  auto input_file_name = 
-    args.count("f") ? args.at("f") : std::string();
 
-  // override any inputs if need be
-  if ( !input_file_name.empty() ) {
-    std::cout << "Using input file \"" << input_file_name << "\"." 
-              << std::endl;
-    inputs_t::load( input_file_name );
+  // ---------------------------------------------------------------------------
+  // initialization values
+  // ---------------------------------------------------------------------------
+  inputs_t inputs;
+  // 1. Configure input targets:
+  // real_t targets
+
+  init_value<real_t> iv_CFL_acoustic("CFL_acoustic");
+  init_value<real_t> iv_CFL_volume("CFL_volume");
+  init_value<real_t> iv_CFL_growth("CFL_growth");
+  init_value<real_t> iv_final_time("final_time");
+  init_value<real_t> iv_initial_time_step("initial_time_step");
+  init_value<real_t> iv_gas_constant("gas_constant");
+  init_value<real_t> iv_specific_heat("specific_heat");
+  // size_t targets
+  init_value<size_t> iv_output_freq("output_freq");
+  init_value<size_t> iv_max_steps("max_steps");
+  // string targets
+  init_value<string_t> iv_prefix("prefix");
+  init_value<string_t> iv_suffix("suffix");
+  init_value<string_t> iv_mesh_type("mesh_type");
+  init_value<string_t> iv_eos_type("eos_type");
+  // init_value<string_t> iv_file("file");
+  // array<real_t,dim> targets
+  init_value<apps::hydro::input_traits::arr_d_r_t> iv_xmin("xmin");
+  init_value<apps::hydro::input_traits::arr_d_r_t> iv_xmax("xmax");
+  // array<size_t,dim> targets
+  init_value<apps::hydro::input_traits::arr_d_s_t> iv_dimensions("dimensions");
+  // initial conditions functions
+  init_value<ics_function_t> iv_ics_func("ics_func");
+
+  std::vector<init_value<bcs_function_t>> iv_bcs_funcs;
+  std::vector<init_value<string_t>> iv_bcs_types;
+  for(size_t i = 0; i < num_dimensions; ++i){
+    string_t func_name_str(mk_bc_func_name(i));
+    iv_bcs_funcs.emplace_back( init_value<bcs_function_t>( func_name_str));
+    string_t type_name_str(mk_bc_type_name(i));
+    iv_bcs_types.emplace_back( init_value<string_t>( type_name_str));
   }
 
+  // 2. Register inputs sources
+  // default problem
+  auto phcs(base_problem());
+  inputs.register_hard_coded_source(phcs.release());
+  // get the input file, if any
+  auto input_file_name = args.count("f") ? args.at("f") : std::string();
+  // use input file to override defaults
+  if ( !input_file_name.empty() ) {
+    std::cout << "Using input file \"" << input_file_name << "\"."
+              << std::endl;
+    ristra::lua_source_ptr_t plua(ristra::mk_lua(input_file_name));
+    // convey structure of CFL and bcs tables to lua_source
+    plua->register_table("initial_time_step","hydro");
+    plua->register_table("CFL","hydro");
+    plua->register_value("CFL_acoustic","CFL","acoustic");
+    plua->register_value("CFL_volume","CFL","volume");
+    plua->register_value("CFL_growth","CFL","growth");
+    for(size_t i = 0; i < num_dimensions; ++i){
+      string_t table_name("bcs" + std::to_string(i+1));
+      plua->register_table(table_name,"hydro");
+      plua->register_value(mk_bc_type_name(i),table_name,"type");
+      plua->register_value(mk_bc_func_name(i),table_name,"func");
+    }
+    // install Lua handler
+    inputs.register_lua_source(plua.release());
+  }
+  // 3. Resolve initialization values
+  bool all_resolved = inputs.resolve_inputs();
+  if(!all_resolved){
+    // there must be a better way...
+    raise_runtime_error("Failed to resolve required inputs!");
+  }
+  // 4. Transfer to local values, applying validators
+  time_constants_t const CFL = {iv_CFL_acoustic.get(), iv_CFL_volume.get(),
+                                iv_CFL_growth.get()};
+  real_t const initial_time_step = iv_initial_time_step.get();
+  size_t const output_freq = iv_output_freq.get();
+  string_t const prefix    = iv_prefix.get();
+  string_t const suffix    = iv_suffix.get();
+  size_t const max_steps   = iv_max_steps.get();
+  real_t const final_time  = iv_final_time.get();
+
+  Insist(false,"bcs.size() != 0");
+  // need ics and bcs
+  apps::hydro::SimConfig simcfg(inputs);
+  input_traits::bcs_list_t bcs(
+      simcfg.get_bcs<bcs_function_t>(iv_bcs_types, iv_bcs_funcs));
   //===========================================================================
   // Mesh Setup
   //===========================================================================
 
   // make the mesh
-  auto mesh = inputs_t::make_mesh( /* solution time */ 0.0 );
+  auto mesh = simcfg.make_mesh( /* solution time */ 0.0 );
 
   // this is the mesh object
-  mesh.is_valid();
-  
+  bool mesh_ok = mesh.is_valid(false);
+  Insist(mesh_ok,"mesh not ok");
+
   cout << mesh;
 
   //===========================================================================
   // Some typedefs
   //===========================================================================
 
-  using mesh_t = decltype(mesh);
-  using size_t = typename mesh_t::size_t;
-  using real_t = typename mesh_t::real_t;
-  using vector_t = typename mesh_t::vector_t; 
 
   // get machine zero
   constexpr auto epsilon = std::numeric_limits<real_t>::epsilon();
@@ -122,11 +212,7 @@ int driver(int argc, char** argv)
   //===========================================================================
 
   // start the timer
-  auto tstart = utils::get_wall_time();
-
-  // type aliases
-  using matrix_t = matrix_t< mesh_t::num_dimensions >;
-  using flux_data_t = flux_data_t< mesh_t::num_dimensions >;
+  auto tstart = flecsale::utils::get_wall_time();
 
   // create some field data.  Fields are registered as struct of arrays.
   // this allows us to access the data in different patterns.
@@ -149,13 +235,13 @@ int driver(int argc, char** argv)
 
   flecsi_register_data(mesh, hydro, corner_normal, vector_t, dense, 1, corners);
   flecsi_register_data(mesh, hydro, corner_force, vector_t, dense, 1, corners);
-  
+
   // register the time step and set a cfl
   flecsi_register_data( mesh, hydro, time_step, real_t, global, 1 );
   flecsi_register_data( mesh, hydro, cfl, time_constants_t, global, 1 );
-  
-  *flecsi_get_accessor( mesh, hydro, time_step, real_t, global, 0 ) = inputs_t::initial_time_step;
-  *flecsi_get_accessor( mesh, hydro, cfl, time_constants_t, global, 0 ) = inputs_t::CFL;
+
+  *flecsi_get_accessor( mesh, hydro, time_step, real_t, global, 0 ) = initial_time_step;
+  *flecsi_get_accessor( mesh, hydro, cfl, time_constants_t, global, 0 ) = CFL;
 
   // Register the total energy
   flecsi_register_data( mesh, hydro, sum_total_energy, real_t, global, 1 );
@@ -171,12 +257,10 @@ int driver(int argc, char** argv)
   flecsi_get_accessor(mesh, hydro, cell_sound_speed,     real_t, dense, 0).attributes().set(persistent);
 
   flecsi_get_accessor(mesh, hydro, node_velocity, vector_t, dense, 0).attributes().set(persistent);
-
-
   //===========================================================================
   // Boundary Conditions
   //===========================================================================
-  
+
   // get the current time
   auto soln_time = mesh.time();
   auto time_cnt  = mesh.time_step_counter();
@@ -185,36 +269,36 @@ int driver(int argc, char** argv)
   boundary_map_t< mesh_t::num_dimensions > boundaries;
 
   // install each boundary
-  for ( const auto & bc_pair : inputs_t::bcs )
+  for ( const input_traits::bcs_pair & bc_pair : bcs )
   {
-    auto bc_type = bc_pair.first.get();
-    auto bc_function = bc_pair.second; 
-    auto bc_key = mesh.install_boundary( 
-      [=](auto f) 
-      { 
+    input_traits::bcs_t * bc_type = bc_pair.first.get();
+    auto bc_function = bc_pair.second;
+    std::array<real_t,num_dimensions> tims_a;
+    auto bc_key = mesh.install_boundary(
+      [=](auto f)
+      {
         if ( f->is_boundary() ) {
-          const auto & fx = f->midpoint();
-          return ( bc_function(fx, soln_time) );
+          vector_t fx( f->midpoint());
+          fx.swap( const_cast<std::array<real_t,num_dimensions>&>(tims_a));
+          return bc_function(tims_a, soln_time);
         }
         return false;
       }
     );
     boundaries.emplace( bc_key, bc_type );
   }
-
-
   //===========================================================================
   // Initial conditions
   //===========================================================================
-  
-  // now call the main task to set the ics.  Here we set primitive/physical 
+
+  // now call the main task to set the ics.  Here we set primitive/physical
   // quanties
-  flecsi_execute_task( initial_conditions_task, loc, single, mesh, inputs_t::ics );
-  
+  ics_function_t ics(iv_ics_func.get());
+  flecsi_execute_task( initial_conditions_task, loc, single, mesh, ics );
 
   // Update the EOS
-  flecsi_execute_task( 
-    update_state_from_pressure_task, loc, single, mesh, inputs_t::eos.get()
+  flecsi_execute_task(
+    update_state_from_pressure_task, loc, single, mesh, simcfg.get_eos().get()
   );
 
 
@@ -223,25 +307,25 @@ int driver(int argc, char** argv)
   //===========================================================================
 
   // now output the solution
-  if ( inputs_t::output_freq > 0 )
-    output(mesh, inputs_t::prefix, inputs_t::postfix, 1);
-  
+  if ( output_freq > 0 )
+    output(mesh, prefix, suffix, 1);
+
 
   //===========================================================================
   // Residual Evaluation
   //===========================================================================
 
   // get the time step accessor
-  auto time_step = flecsi_get_accessor( mesh, hydro, time_step, real_t, global, 0 );   
+  auto time_step = flecsi_get_accessor( mesh, hydro, time_step, real_t, global, 0 );
 
   // a counter for this session
-  size_t num_steps = 0; 
+  size_t num_steps = 0;
 
   for (
     size_t num_retries = 0;
-    (num_steps < inputs_t::max_steps && soln_time < inputs_t::final_time); 
-    ++num_steps 
-  ) {   
+    (num_steps < max_steps && soln_time < final_time);
+    ++num_steps
+  ) {
 
     //--------------------------------------------------------------------------
     // Begin Time step
@@ -264,7 +348,7 @@ int driver(int argc, char** argv)
     flecsi_execute_task( estimate_nodal_state_task, loc, single, mesh );
 
     // compute the nodal velocity at n=0
-    flecsi_execute_task( 
+    flecsi_execute_task(
       evaluate_nodal_state_task, loc, single, mesh, boundaries
     );
 
@@ -278,9 +362,9 @@ int driver(int argc, char** argv)
     // compute the time step
     std::string limit_string;
     flecsi_execute_task( evaluate_time_step_task, loc, single, mesh, limit_string );
-    
+
     // access the computed time step and make sure its not too large
-    *time_step = std::min( *time_step, inputs_t::final_time - soln_time );       
+    *time_step = std::min( *time_step, final_time - soln_time );
 
     cout << std::string(60, '=') << endl;
     auto ss = cout.precision();
@@ -300,9 +384,9 @@ int driver(int argc, char** argv)
     cout.precision(ss);
 
     //--------------------------------------------------------------------------
-    // Multistage 
+    // Multistage
     //--------------------------------------------------------------------------
-    
+
     // a stage counter
     int istage = 0;
 
@@ -318,14 +402,14 @@ int driver(int argc, char** argv)
       flecsi_execute_task( move_mesh_task, loc, single, mesh, stages[istage] );
 
       // update solution to n+1/2
-      auto err = flecsi_execute_task( 
+      auto err = flecsi_execute_task(
         apply_update_task, loc, single, mesh, stages[istage], machine_zero, (istage==0)
       );
       auto update_flag = err.get();
-      
+
       // dump the current errored solution to a file
-      if ( update_flag != solution_error_t::ok && inputs_t::output_freq > 0)
-        output(mesh, inputs_t::prefix+"-error", inputs_t::postfix, 1);
+      if ( update_flag != solution_error_t::ok && output_freq > 0)
+        output(mesh, prefix+"-error", suffix, 1);
 
       // if we got an unphysical solution, half the time step and try again
       if ( update_flag == solution_error_t::unphysical ) {
@@ -370,16 +454,16 @@ int driver(int argc, char** argv)
       }
 
       // Update derived solution quantities
-      flecsi_execute_task( 
-        update_state_from_energy_task, loc, single, mesh, inputs_t::eos.get() 
+      flecsi_execute_task(
+        update_state_from_energy_task, loc, single, mesh, simcfg.get_eos().get()
       );
 
       // compute the current nodal velocity
-      flecsi_execute_task( 
+      flecsi_execute_task(
         evaluate_nodal_state_task, loc, single, mesh, boundaries
       );
 
-      // if we are retrying, then restart the loop since all the state has been 
+      // if we are retrying, then restart the loop since all the state has been
       // reset
       if (mode == mode_t::retry) {
         istage = 0;
@@ -387,11 +471,11 @@ int driver(int argc, char** argv)
       }
 
       // now we can quit once all the state has been reset
-      else if ( 
-        mode == mode_t::quit || 
-        mode == mode_t::restart || 
+      else if (
+        mode == mode_t::quit ||
+        mode == mode_t::restart ||
         ++istage==stages.size()
-      ) 
+      )
         break;
 
       //------------------------------------------------------------------------
@@ -421,10 +505,10 @@ int driver(int argc, char** argv)
     // update time
     soln_time = mesh.increment_time( *time_step );
     time_cnt = mesh.increment_time_step_counter();
-  
+
     // now output the solution
     output(
-      mesh, inputs_t::prefix, inputs_t::postfix, inputs_t::output_freq
+      mesh, prefix, suffix, output_freq
     );
 
     // if we got through a whole cycle, reset the retry counter
@@ -436,22 +520,22 @@ int driver(int argc, char** argv)
   //===========================================================================
   // Post-process
   //===========================================================================
-    
-  // now output the solution
-  if ( (inputs_t::output_freq > 0) && (time_cnt % inputs_t::output_freq != 0) )
-    output(mesh, inputs_t::prefix, inputs_t::postfix, 1);
 
-  cout << "Final solution time is " 
+  // now output the solution
+  if ( (output_freq > 0) && (time_cnt % output_freq != 0) )
+    output(mesh, prefix, suffix, 1);
+
+  cout << "Final solution time is "
        << std::scientific << std::setprecision(6) << soln_time
        << " after " << num_steps << " steps." << std::endl;
 
-  
-  auto tdelta = utils::get_wall_time() - tstart;
-  std::cout << "Elapsed wall time is " << std::setprecision(4) << std::fixed 
+
+  auto tdelta = flecsale::utils::get_wall_time() - tstart;
+  std::cout << "Elapsed wall time is " << std::setprecision(4) << std::fixed
             << tdelta << "s." << std::endl;
-  
+
   // now output the checksums
-  mesh::checksum(mesh);
+  flecsale::mesh::checksum(mesh);
 
   // success
   return 0;

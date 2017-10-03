@@ -1,6 +1,11 @@
-// SimConfig.h
-// Sep 01, 2017
-// (c) Copyright 2017 LANSLLC, all rights reserved
+/*~-------------------------------------------------------------------------~~*
+ * Copyright (c) 2016 Los Alamos National Laboratory, LLC
+ * All rights reserved
+ *~-------------------------------------------------------------------------~~*/
+////////////////////////////////////////////////////////////////////////////////
+/// \file
+/// \brief Simple tasks related to solving full hydro solutions.
+////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
 

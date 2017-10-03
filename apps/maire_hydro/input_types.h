@@ -1,6 +1,11 @@
-// input_types.h
-// Sep 25, 2017
-// (c) Copyright 2017 LANSLLC, all rights reserved
+/*~-------------------------------------------------------------------------~~*
+ * Copyright (c) 2016 Los Alamos National Laboratory, LLC
+ * All rights reserved
+ *~-------------------------------------------------------------------------~~*/
+////////////////////////////////////////////////////////////////////////////////
+/// \file
+/// \brief Type specializations for maire-hydro simulations
+////////////////////////////////////////////////////////////////////////////////
 
 
 #pragma once
