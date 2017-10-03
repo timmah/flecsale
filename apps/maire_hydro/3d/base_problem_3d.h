@@ -30,15 +30,15 @@ ics_func(input_traits::flecsale_vector_t const &x,
   using arr_d_r_t = input_traits::arr_d_r_t;
   using arr_d_s_t = input_traits::arr_d_s_t;
 
-  constexpr real_t e0 = 0.244816;
+  constexpr real_t e0 = 0.106384;
   constexpr real_t gamma = 1.4;
   constexpr arr_d_r_t dx = {detail::length[0] / detail::num_cells[0],
                             detail::length[1] / detail::num_cells[1],
                             detail::length[2] / detail::num_cells[2],
                           };
   constexpr real_t delta_r = std::sqrt(
-      1.0e-12 + 0.25 * (dx[0] * dx[0] + dx[1] * dx[1] + dx[2] * dx[2]));
-  constexpr real_t delta_vol = dx[0] * dx[1];
+      0.25 * (dx[0] * dx[0] + dx[1] * dx[1] + dx[2] * dx[2]));
+  constexpr real_t delta_vol = dx[0] * dx[1] * dx[2];
   constexpr real_t d = 1.0;
   constexpr real_t p_small_r = (gamma - 1.0) * d * e0 / delta_vol;
   constexpr real_t p_large_r = 1.0e-6;
@@ -52,7 +52,7 @@ ics_func(input_traits::flecsale_vector_t const &x,
   real_t const r = std::sqrt(sum_sq);
   real_t const p = r < delta_r ? p_small_r : p_large_r;
   return std::make_tuple(d, v, p);
-} // ics_func_2d
+} // ics_func_3d
 
 bool bc_function_1(input_traits::flecsale_vector_t const &x,
                    input_traits::real_t const &/*t*/){
@@ -99,7 +99,7 @@ struct base_problem_3d{
                                   {"specific_heat", 1.0}};
     hcs.set_registry<real_t>(real_reg);
     // register size_t defaults
-    reg<size_t> const size_reg = {{"output_freq", 20u}, {"max_steps", 20u}};
+    reg<size_t> const size_reg = {{"output_freq", 10u}, {"max_steps", 10u}};
     hcs.set_registry<size_t>(size_reg);
     // register string_t defaults
     reg<string_t> const string_reg = {{"eos_type", "ideal_gas"},

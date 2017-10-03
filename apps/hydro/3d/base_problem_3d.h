@@ -58,7 +58,7 @@ struct base_problem_3d{
                                   {"specific_heat", 1.0}};
     hcs.set_registry<real_t>(real_reg);
     // register size_t defaults
-    reg<size_t> const size_reg = {{"output_freq", 1lu}, {"max_steps", 1e6}};
+    reg<size_t> const size_reg = {{"output_freq", 100u}, {"max_steps", 1e6}};
     hcs.set_registry<size_t>(size_reg);
     // register string_t defaults
     reg<string_t> const string_reg = {{"eos_type", "ideal_gas"},
