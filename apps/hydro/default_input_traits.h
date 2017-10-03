@@ -10,6 +10,7 @@
 #pragma once
 
 #include "ristra/lua_access.h"
+#include "flecsale/math/vector.h"
 #include <functional>
 #include <string>
 #include <tuple>
@@ -26,9 +27,16 @@ struct hydro_input_traits{
   using vector_t = std::array<real_t,dim>;
   using arr_d_r_t = std::array<real_t,dim>;
   using arr_d_s_t = std::array<size_t,dim>;
-  using ics_return_t   = std::tuple<real_t,arr_d_r_t,real_t>;
+
+
+  using flecsale_vector_t = flecsale::math::array<real_t,dim>;
+  using flecsale_arr_d_r_t = flecsale::math::array<real_t,dim>;
+  using flecsale_arr_d_s_t = flecsale::math::array<size_t,dim>;
+
+
+  using ics_return_t   = std::tuple<real_t,flecsale_arr_d_r_t,real_t>;
   using ics_function_t =
-    std::function<ics_return_t(arr_d_r_t const &, real_t const & t)>;
+    std::function<ics_return_t(flecsale_arr_d_r_t const &, real_t const & t)>;
 
   using types = std::tuple<real_t,
                            std::string,
@@ -42,13 +50,13 @@ struct hydro_input_traits{
   // interface
     ics_return_t
     operator()(
-      arr_d_r_t const & x, real_t const t)
+      flecsale_arr_d_r_t const & x, real_t const t)
     {
       real_t d,p;
-      arr_d_r_t v;
+      flecsale_arr_d_r_t v;
       // why not just return the tuple?
       std::tie(d, v, p) =
-        lua_func_(x, t).template as<real_t, arr_d_r_t, real_t>();
+        lua_func_(x, t).template as<real_t, flecsale_arr_d_r_t, real_t>();
       return std::make_tuple( d, std::move(v), p);
     }
 

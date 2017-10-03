@@ -18,24 +18,6 @@
 namespace apps {
 namespace hydro {
 
-/**\brief Copy "vector" v to array a.
- * Hack until we work out fixed-size vectors once and for all.*/
-template <typename vector_t, typename T = typename vector_t::value_type,
-          size_t sz = vector_t::length>
-inline
-void convert_vector(vector_t const &v, std::array<T,sz> &a){
-  for(size_t i = 0; i < sz; ++i){a[i] = v[i];}
-}
-
-/**\brief Copy array a to "vector" v.
- * Hack until we work out fixed-size vectors once and for all.*/
-template <typename vector_t, typename T = typename vector_t::value_type,
-          size_t sz = vector_t::length>
-inline
-void convert_vector(std::array<T,sz> const &a,vector_t &v){
-  for (size_t i = 0; i < sz; ++i) { v[i] = a[i];}
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 //! \brief The main task for setting initial conditions
 //!
@@ -64,18 +46,11 @@ int initial_conditions(T &mesh, F &&ics) {
   auto cs = mesh.cells();
   auto num_cells = cs.size();
 
-  std::array<real_t,T::num_dimensions> a, b;
-
   // This doesn't work with lua input
   //#pragma omp parallel for
   for ( counter_t i=0; i<num_cells; i++ ) {
     auto c = cs[i];
-    convert_vector(xc[c],a);
-    // std::tie( d[c], v[c], p[c] ) = std::forward<F>(ics)( xc[c], soln_time );
-    auto t = std::forward<F>(ics)( a, soln_time );
-    d[c] = std::get<0>(t);
-    convert_vector(std::get<1>(t),v[c]);
-    p[c] = std::get<2>(t);
+    std::tie( d[c], v[c], p[c] ) = std::forward<F>(ics)( xc[c], soln_time );
   }
 
   return 0;

@@ -14,10 +14,10 @@ namespace apps::hydro{
 template <class T> using reg = ristra::hard_coded_source_t::registry<T>;
 
 inline apps::hydro::input_traits::ics_return_t
-ics_func(apps::hydro::input_traits::vector_t const &x,
+ics_func(apps::hydro::input_traits::flecsale_vector_t const &x,
          apps::hydro::input_traits::real_t const &t) {
   apps::hydro::input_traits::real_t d, p;
-  apps::hydro::input_traits::vector_t v;
+  apps::hydro::input_traits::flecsale_vector_t v;
   bool all_neg(true);
   for(size_t i = 0; i < apps::hydro::input_traits::dim; ++i){
     v[i] = 0.0;
