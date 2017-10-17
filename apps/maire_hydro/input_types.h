@@ -10,9 +10,9 @@
 
 #pragma once
 
-#include "ristra/input_engine.h"
 #include "default_input_traits.h"
 #include "ristra/init_value.h"
+#include "ristra/input_engine.h"
 
 namespace apps::hydro{
 
