@@ -40,8 +40,11 @@ namespace hydro {
 template< typename inputs_t, typename base_problem>
 int driver(int argc, char** argv)
 {
-  using real_t = typename inputs_t::real_t;
-  using string_t = typename inputs_t::string_t;
+  constexpr size_t dim = input_traits::dim;
+  using real_t = typename input_traits::real_t;
+  using string_t = typename input_traits::string_t;
+  using mesh_t = mesh_t<dim>;
+  using vector_t = typename mesh_t::vector_t;
 
   // set exceptions
   enable_exceptions();
@@ -143,7 +146,7 @@ int driver(int argc, char** argv)
   auto catalyst_args =
     args.count("c") ? args.at("c") : std::string();
   // split them up into a list
-  auto catalyst_scripts = utils::split( catalyst_args, {';'} );
+  auto catalyst_scripts = flecsale::utils::split( catalyst_args, {';'} );
 
   if ( !catalyst_args.empty() ) {
     std::cout << "Using catalyst args \"" << catalyst_args << "\"."
@@ -154,20 +157,14 @@ int driver(int argc, char** argv)
   // Mesh Setup
   //===========================================================================
   // make the mesh
-  SimConfig::mesh_t mesh = simcfg.make_mesh( /* solution time */ 0.0 );
+  SimConfig::mesh_ptr_t pmesh = simcfg.make_mesh( /* solution time */ 0.0 );
+  SimConfig::mesh_t &mesh(*pmesh);
 
   // this is the mesh object
   bool mesh_ok = mesh.is_valid(false);
   Insist(mesh_ok,"mesh not ok");
 
   cout << mesh;
-
-  //===========================================================================
-  // Some typedefs
-  //===========================================================================
-
-  using mesh_t = decltype(mesh);
-  using vector_t = typename mesh_t::vector_t;
 
   // get machine zero
   constexpr auto epsilon = std::numeric_limits<real_t>::epsilon();
@@ -181,7 +178,7 @@ int driver(int argc, char** argv)
   //===========================================================================
 
   // start the timer
-  auto tstart = utils::get_wall_time();
+  auto tstart = flecsale::utils::get_wall_time();
 
   // type aliases
   using eqns_t = eqns_t<mesh_t::num_dimensions>;
@@ -371,7 +368,7 @@ int driver(int argc, char** argv)
 
     #ifdef HAVE_CATALYST
     if (!catalyst_scripts.empty()) {
-      auto vtk_grid = mesh::to_vtk( mesh );
+      auto vtk_grid = flecsale::mesh::to_vtk( mesh );
       insitu.process(
         vtk_grid, soln_time, num_steps, (num_steps==max_steps-1)
       );
@@ -403,13 +400,13 @@ int driver(int argc, char** argv)
        << " after " << num_steps << " steps." << std::endl;
 
 
-  auto tdelta = utils::get_wall_time() - tstart;
+  auto tdelta = flecsale::utils::get_wall_time() - tstart;
   std::cout << "Elapsed wall time is " << std::setprecision(4) << std::fixed
             << tdelta << "s." << std::endl;
 
 
   // now output the checksums
-  mesh::checksum(mesh);
+  flecsale::mesh::checksum(mesh);
 
 
   // success if you reached here
