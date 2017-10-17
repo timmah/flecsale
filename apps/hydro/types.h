@@ -22,23 +22,15 @@
 namespace apps {
 namespace hydro {
 
-// some namespace aliases
-namespace common= flecsale::common;
-namespace mesh  = flecsale::mesh;
-namespace math  = flecsale::math;
-namespace utils = flecsale::utils;
-namespace geom  = flecsale::geom;
-namespace eos   = flecsale::eos;
-namespace eqns  = flecsale::eqns;
-namespace io    = flecsale::io;
+using size_t = flecsale::common::size_t;
+using real_t = flecsale::common::real_t;
 
-using size_t = common::size_t;
-using real_t = common::real_t;
+template <size_t dim> using mesh_t = flecsale::mesh::burton::burton_mesh_t<dim>;
 
-using eos_t = eos::eos_base_t<real_t>;
+using eos_t = flecsale::eos::eos_base_t<real_t>;
 
 template< std::size_t N >
-using eqns_t = typename eqns::euler_eqns_t<real_t, N>;
+using eqns_t = typename flecsale::eqns::euler_eqns_t<real_t, N>;
 
 template< std::size_t N >
 using flux_data_t = typename eqns_t<N>::flux_data_t;
@@ -70,7 +62,7 @@ template< typename E, typename UL, typename UR, typename V >
 auto flux_function( UL && left_state, UR && right_state, V && norm )
 {
   return
-    eqns::hlle_flux<E>( std::forward<UL>(left_state),
+    flecsale::eqns::hlle_flux<E>( std::forward<UL>(left_state),
                         std::forward<UR>(right_state),
                         std::forward<V>(norm) );
 }

@@ -509,7 +509,7 @@ int output( T & mesh,
   ss << std::setw( 7 ) << std::setfill( '0' ) << cnt++;
   ss << "."+postfix;
 
-  mesh::write_mesh( ss.str(), mesh );
+  flecsale::mesh::write_mesh( ss.str(), mesh );
 
   return 0;
 }
