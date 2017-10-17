@@ -10,8 +10,6 @@
 
 #pragma once
 
-#include "ristra/lua_access.h"
-// #include "types.h"
 #include <functional>
 #include <string>
 #include <tuple>
