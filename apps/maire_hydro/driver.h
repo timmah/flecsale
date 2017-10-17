@@ -39,8 +39,8 @@ namespace hydro {
 template< typename inputs_t, typename base_problem>
 int driver(int argc, char** argv)
 {
-  using real_t = typename inputs_t::real_t;
-  using string_t = typename inputs_t::string_t;
+  using real_t = typename input_traits::real_t;
+  using string_t = typename input_traits::string_t;
   // using ::init_value;
   using mesh_t = SimConfig::mesh_t;
   using vector_t = typename mesh_t::vector_t;
@@ -184,8 +184,8 @@ int driver(int argc, char** argv)
   //===========================================================================
 
   // make the mesh
-  auto mesh = simcfg.make_mesh( /* solution time */ 0.0 );
-
+  auto pmesh = simcfg.make_mesh( /* solution time */ 0.0 );
+  auto &mesh(*pmesh);
   // this is the mesh object
   bool mesh_ok = mesh.is_valid(false);
   Insist(mesh_ok,"mesh not ok");

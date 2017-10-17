@@ -30,7 +30,7 @@ struct SimConfig{
   using eos_t = flecsale::eos::eos_base_t<real_t>;
   using eos_ptr_t = std::unique_ptr<eos_t>;
   using mesh_t = flecsale::mesh::burton::burton_mesh_t<dim>;
-  using mesh_ptr_t = std::unique_ptr<mesh_t>;
+  using mesh_ptr_t = std::shared_ptr<mesh_t>;
   using ics_function_t = input_traits::ics_function_t;
   using bcs_function_t = input_traits::bcs_function_t;
   using bcs_list_t = input_traits::bcs_list_t;
@@ -71,7 +71,7 @@ struct SimConfig{
   }
 
   /**\brief Construct a box mesh, or read a file, or just quit */
-  mesh_t make_mesh(real_t /* sim_time */) {
+  mesh_ptr_t make_mesh(real_t /* sim_time */) {
     string_t const mesh_type(m_inputs.get_value<string_t>("mesh_type"));
     if ("box" == mesh_type) {
       using arrayr_t = input_traits::arr_d_r_t;
@@ -79,12 +79,12 @@ struct SimConfig{
       arrayr_t const xmin = m_inputs.get_value<arrayr_t>("xmin");
       arrayr_t const xmax = m_inputs.get_value<arrayr_t>("xmax");
       arrays_t const dimensions = m_inputs.get_value<arrays_t>("dimensions");
-      return flecsale::mesh::box<mesh_t>(dimensions, xmin, xmax);
+      return flecsale::mesh::ptr_box<mesh_t>(dimensions, xmin, xmax);
     }
     else if ("read" == mesh_type) {
       string_t const mesh_file(m_inputs.get_value<string_t>("file"));
-      mesh_t m;
-      flecsale::mesh::read_mesh(mesh_file, m);
+      auto m = std::make_shared<mesh_t>();
+      flecsale::mesh::read_mesh(mesh_file, *m);
       return m;
     }
     raise_implemented_error("Unknown mesh type \"" + mesh_type + "\"");
