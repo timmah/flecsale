@@ -8,17 +8,19 @@
 
 namespace flecsi_sp::burton{
 
-struct Sim_Config{
-  explicit Sim_Config(std::string const &s):m_string(s) {}
+// struct Sim_Config{
+//   explicit Sim_Config(std::string const &s):m_string(s) {}
 
-  std::string hoopla() const { return m_string; }
+//   std::string hoopla() const { return m_string; }
 
-  std::string m_string;
-};
+//   std::string m_string;
+// };
 
 // enum struct global_object_types{
 //   config
 // };
+
+using apps::common::Sim_Config;
 
 flecsi_register_global_object(0, config, Sim_Config);
 
@@ -27,8 +29,7 @@ void application_tlt_init(int argc, char ** argv){
 
   auto sim_config = flecsi_get_global_object(0,config,Sim_Config);
 
-  std::string s = sim_config->hoopla();
-  std::cout << "Sim_Config: \"" << s << "\"\n";
+  return;
 } // application_tlt_init
 
 } //
