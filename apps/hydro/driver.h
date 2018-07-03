@@ -8,6 +8,9 @@
 ///////////////////////////////////////////////////////////////////////////////
 #pragma once
 
+// common headers
+#include "../common/application_init.h"
+
 // hydro includes
 #include "tasks.h"
 #include "types.h"
@@ -25,22 +28,22 @@
 
 namespace apps {
 namespace hydro {
-  
+
 // create some field data.  Fields are registered as struct of arrays.
 // this allows us to access the data in different patterns.
 flecsi_register_field(
-  mesh_t, 
-  hydro,  
-  density,   
-  mesh_t::real_t, 
-  dense, 
-  1, 
+  mesh_t,
+  hydro,
+  density,
+  mesh_t::real_t,
+  dense,
+  1,
   mesh_t::index_spaces_t::cells
 );
 
 flecsi_register_field(
-  mesh_t, 
-  hydro, 
+  mesh_t,
+  hydro,
   velocity,
   mesh_t::vector_t,
   dense,
@@ -49,7 +52,7 @@ flecsi_register_field(
 );
 
 flecsi_register_field(
-  mesh_t, 
+  mesh_t,
   hydro,
   internal_energy,
   mesh_t::real_t,
@@ -59,12 +62,12 @@ flecsi_register_field(
 );
 
 flecsi_register_field(
-  mesh_t, 
-  hydro, 
+  mesh_t,
+  hydro,
   pressure,
-  mesh_t::real_t, 
-  dense, 
-  1, 
+  mesh_t::real_t,
+  dense,
+  1,
   mesh_t::index_spaces_t::cells
 );
 
@@ -91,11 +94,11 @@ flecsi_register_field(
 // Here I am regestering a struct as the stored data
 // type since I will only ever be accesissing all the data at once.
 flecsi_register_field(
-  mesh_t, 
-  hydro, 
-  flux, 
-  flux_data_t, 
-  dense, 
+  mesh_t,
+  hydro,
+  flux,
+  flux_data_t,
+  dense,
   1,
   mesh_t::index_spaces_t::faces
 );
@@ -103,29 +106,34 @@ flecsi_register_field(
 ///////////////////////////////////////////////////////////////////////////////
 //! \brief A sample test of the hydro solver
 ///////////////////////////////////////////////////////////////////////////////
-int driver(int argc, char** argv) 
+int driver(int argc, char** argv)
 {
+  using apps::common::Sim_Config;
 
   // get the context
   auto & context = flecsi::execution::context_t::instance();
   auto rank = context.color();
 
+  auto sim_config = flecsi_get_global_object(0,config,Sim_Config);
+  std::string s = sim_config->hoopla();
+  std::cout << "Sim_Config: \"" << s << "\"\n";
+
   //===========================================================================
   // Mesh Setup
   //===========================================================================
 
-  // get the client handle 
+  // get the client handle
   auto mesh = flecsi_get_client_handle(mesh_t, meshes, mesh0);
- 
+
   // cout << mesh;
-  
+
   //===========================================================================
   // Some typedefs
   //===========================================================================
 
   using size_t = typename mesh_t::size_t;
   using real_t = typename mesh_t::real_t;
-  using vector_t = typename mesh_t::vector_t; 
+  using vector_t = typename mesh_t::vector_t;
 
   // get machine zero
   constexpr auto epsilon = std::numeric_limits<real_t>::epsilon();
@@ -134,7 +142,7 @@ int driver(int argc, char** argv)
   //===========================================================================
   // Access what we need
   //===========================================================================
-  
+
   auto d  = flecsi_get_handle(mesh, hydro,  density,   real_t, dense, 0);
   //auto d0 = flecsi_get_handle(mesh, hydro,  density,   real_t, dense, 1);
   auto v  = flecsi_get_handle(mesh, hydro, velocity, vector_t, dense, 0);
@@ -151,18 +159,18 @@ int driver(int argc, char** argv)
   //===========================================================================
   // Initial conditions
   //===========================================================================
- 
-  // the solution time starts at zero
-  real_t soln_time{0};  
-  size_t time_cnt{0}; 
 
-  // now call the main task to set the ics.  Here we set primitive/physical 
+  // the solution time starts at zero
+  real_t soln_time{0};
+  size_t time_cnt{0};
+
+  // now call the main task to set the ics.  Here we set primitive/physical
   // quanties
-  flecsi_execute_task( 
-    initial_conditions, 
+  flecsi_execute_task(
+    initial_conditions,
     apps::hydro,
-    single, 
-    mesh, 
+    single,
+    mesh,
     inputs_t::ics,
     inputs_t::eos,
     soln_time,
@@ -177,7 +185,7 @@ int driver(int argc, char** argv)
   //===========================================================================
   // Pre-processing
   //===========================================================================
-  
+
   auto prefix_char = flecsi_sp::utils::to_char_array( inputs_t::prefix );
  	auto postfix_char =  flecsi_sp::utils::to_char_array( "exo" );
 
@@ -210,17 +218,17 @@ int driver(int argc, char** argv)
   // Residual Evaluation
   //===========================================================================
 
-  for ( 
+  for (
     size_t num_steps = 0;
-    (num_steps < inputs_t::max_steps && soln_time < inputs_t::final_time); 
-    ++num_steps 
-  ) {   
+    (num_steps < inputs_t::max_steps && soln_time < inputs_t::final_time);
+    ++num_steps
+  ) {
 
     //-------------------------------------------------------------------------
     // compute the time step
 
     // we dont need the time step yet
-    auto local_future_time_step = flecsi_execute_task( 
+    auto local_future_time_step = flecsi_execute_task(
       evaluate_time_step, apps::hydro, single, mesh, d, v, e, p, T, a,
       inputs_t::CFL, inputs_t::final_time - soln_time
     );
@@ -231,13 +239,13 @@ int driver(int argc, char** argv)
     // compute the fluxes
     flecsi_execute_task( evaluate_fluxes, apps::hydro, single, mesh,
         d, v, e, p, T, a, F );
- 
+
     // now we need it
     auto time_step =
       flecsi::execution::context_t::instance().reduce_min(local_future_time_step);
 
     // Loop over each cell, scattering the fluxes to the cell
-    flecsi_execute_task( 
+    flecsi_execute_task(
       apply_update, apps::hydro, single, mesh, inputs_t::eos,
       time_step, F, d, v, e, p, T, a
     );
@@ -256,7 +264,7 @@ int driver(int argc, char** argv)
       cout.setf( std::ios::scientific );
       cout.precision(6);
       cout << "|  " << "Step:" << std::setw(10) << time_cnt
-           << "  |  Time:" << std::setw(17) << soln_time 
+           << "  |  Time:" << std::setw(17) << soln_time
            << "  |  Step Size:" << std::setw(17) << time_step
            << "  |" << std::endl;
       cout.unsetf( std::ios::scientific );
@@ -266,7 +274,7 @@ int driver(int argc, char** argv)
 #ifdef HAVE_CATALYST
     if (!catalyst_scripts.empty()) {
       auto vtk_grid = mesh::to_vtk( mesh );
-      insitu.process( 
+      insitu.process(
         vtk_grid, soln_time, num_steps, (num_steps==inputs_t::max_steps-1)
       );
     }
@@ -274,12 +282,12 @@ int driver(int argc, char** argv)
 
 
     // now output the solution
-    if ( has_output && 
-        (time_cnt % inputs_t::output_freq == 0 || 
+    if ( has_output &&
+        (time_cnt % inputs_t::output_freq == 0 ||
          num_steps==inputs_t::max_steps-1 ||
          std::abs(soln_time-inputs_t::final_time) < epsilon
-        )  
-      ) 
+        )
+      )
     {
       flecsi_execute_task(
         output,
@@ -300,17 +308,17 @@ int driver(int argc, char** argv)
   //===========================================================================
   // Post-process
   //===========================================================================
-    
+
   auto tdelta = ristra::utils::get_wall_time() - tstart;
 
   if ( rank == 0 ) {
 
-    cout << "Final solution time is " 
+    cout << "Final solution time is "
          << std::scientific << std::setprecision(2) << soln_time
          << " after " << time_cnt << " steps." << std::endl;
 
-    
-    std::cout << "Elapsed wall time is " << std::setprecision(4) << std::fixed 
+
+    std::cout << "Elapsed wall time is " << std::setprecision(4) << std::fixed
               << tdelta << "s." << std::endl;
 
   }
