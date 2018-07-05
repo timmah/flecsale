@@ -24,44 +24,44 @@
 
 namespace apps {
 namespace hydro {
-  
+
 // create some field data.  Fields are registered as struct of arrays.
 // this allows us to access the data in different patterns.
 
 // The cell state
 flecsi_register_field(
-  mesh_t, 
-  hydro,  
+  mesh_t,
+  hydro,
   cell_volume,
-  mesh_t::real_t, 
-  dense, 
-  1, 
+  mesh_t::real_t,
+  dense,
+  1,
   mesh_t::index_spaces_t::cells
 );
 
 flecsi_register_field(
-  mesh_t, 
-  hydro,  
+  mesh_t,
+  hydro,
   cell_mass,
-  mesh_t::real_t, 
-  dense, 
-  1, 
+  mesh_t::real_t,
+  dense,
+  1,
   mesh_t::index_spaces_t::cells
 );
 
 flecsi_register_field(
-  mesh_t, 
-  hydro, 
+  mesh_t,
+  hydro,
   cell_pressure,
-  mesh_t::real_t, 
-  dense, 
-  1, 
+  mesh_t::real_t,
+  dense,
+  1,
   mesh_t::index_spaces_t::cells
 );
 
 flecsi_register_field(
-  mesh_t, 
-  hydro, 
+  mesh_t,
+  hydro,
   cell_velocity,
   mesh_t::vector_t,
   dense,
@@ -70,17 +70,17 @@ flecsi_register_field(
 );
 
 flecsi_register_field(
-  mesh_t, 
-  hydro,  
-  cell_density,   
-  mesh_t::real_t, 
-  dense, 
-  2, 
+  mesh_t,
+  hydro,
+  cell_density,
+  mesh_t::real_t,
+  dense,
+  2,
   mesh_t::index_spaces_t::cells
 );
 
 flecsi_register_field(
-  mesh_t, 
+  mesh_t,
   hydro,
   cell_internal_energy,
   mesh_t::real_t,
@@ -160,12 +160,12 @@ flecsi_register_field(
   1,
   mesh_t::index_spaces_t::corners
 );
-  
+
 
 ///////////////////////////////////////////////////////////////////////////////
 //! \brief A sample test of the hydro solver
 ///////////////////////////////////////////////////////////////////////////////
-int driver(int argc, char** argv) 
+int driver(int argc, char** argv)
 {
 
   std::cout << "STARTING DRIVER COMPUTATION!!!!" << std::endl;
@@ -179,33 +179,33 @@ int driver(int argc, char** argv)
   // Mesh Setup
   //===========================================================================
 
-  // get the client handle 
+  // get the client handle
   auto mesh = flecsi_get_client_handle(mesh_t, meshes, mesh0);
- 
+
   // check the mesh
-  flecsi_execute_task( 
-    validate_mesh, 
+  flecsi_execute_task(
+    validate_mesh,
     apps::hydro,
-    single, 
+    single,
     mesh
   );
 
-  
+
   //===========================================================================
   // Some typedefs
   //===========================================================================
 
   using size_t = typename mesh_t::size_t;
   using real_t = typename mesh_t::real_t;
-  using vector_t = typename mesh_t::vector_t; 
+  using vector_t = typename mesh_t::vector_t;
 
   // get machine zero
   constexpr auto epsilon = std::numeric_limits<real_t>::epsilon();
   const auto machine_zero = std::sqrt(epsilon);
 
   // the solution time starts at zero
-  real_t soln_time{0};  
-  size_t time_cnt{0}; 
+  real_t soln_time{0};
+  size_t time_cnt{0};
 
   //===========================================================================
   // Access what we need
@@ -221,7 +221,7 @@ int driver(int argc, char** argv)
   auto ec = flecsi_get_handle(mesh, hydro, cell_internal_energy, real_t, dense, 0);
   auto Tc = flecsi_get_handle(mesh, hydro, cell_temperature,     real_t, dense, 0);
   auto ac = flecsi_get_handle(mesh, hydro, cell_sound_speed,     real_t, dense, 0);
-  
+
 	auto uc0 = flecsi_get_handle(mesh, hydro, cell_velocity, vector_t, dense, 1);
   auto ec0 = flecsi_get_handle(mesh, hydro, cell_internal_energy, real_t, dense, 1);
 
@@ -233,18 +233,18 @@ int driver(int argc, char** argv)
   auto dUdt = flecsi_get_handle(mesh, hydro, cell_residual, flux_data_t, dense, 0);
   auto npc = flecsi_get_handle(mesh, hydro, corner_normal, vector_t, dense, 0);
   auto Fpc = flecsi_get_handle(mesh, hydro, corner_force, vector_t, dense, 0);
-  
+
 
   //===========================================================================
   // Boundary Conditions
   //===========================================================================
-  
+
   // install each boundary
   tag_t bc_key = 0;
   for ( const auto & bc_pair : inputs_t::bcs )
   {
     auto bc_type = bc_pair.first.get();
-    auto bc_function = bc_pair.second; 
+    auto bc_function = bc_pair.second;
     flecsi_execute_task(
         install_boundary,
         apps::hydro,
@@ -259,14 +259,14 @@ int driver(int argc, char** argv)
   //===========================================================================
   // Initial conditions
   //===========================================================================
-  
-  // now call the main task to set the ics.  Here we set primitive/physical 
+
+  // now call the main task to set the ics.  Here we set primitive/physical
   // quanties
-  flecsi_execute_task( 
-    initial_conditions, 
+  flecsi_execute_task(
+    initial_conditions,
     apps::hydro,
-    single, 
-    mesh, 
+    single,
+    mesh,
     inputs_t::ics,
     inputs_t::eos,
     soln_time,
@@ -316,9 +316,9 @@ int driver(int argc, char** argv)
 
   for (
     size_t num_steps = 0;
-    (num_steps < inputs_t::max_steps && soln_time < inputs_t::final_time); 
-    ++num_steps 
-  ) {   
+    (num_steps < inputs_t::max_steps && soln_time < inputs_t::final_time);
+    ++num_steps
+  ) {
 
     //--------------------------------------------------------------------------
     // Begin Time step
@@ -342,7 +342,7 @@ int driver(int argc, char** argv)
 		);
 
     // compute the nodal velocity at n=0
-    flecsi_execute_task( 
+    flecsi_execute_task(
       evaluate_nodal_state,
       apps::hydro,
       single,
@@ -375,27 +375,27 @@ int driver(int argc, char** argv)
 			time_step,
 			ac, dUdt
  		);
-    
+
     // now we need it
     time_step =
       flecsi::execution::context_t::instance().reduce_min(local_time_step_future);
-    time_step = std::min( time_step, inputs_t::final_time - soln_time );       
+    time_step = std::min( time_step, inputs_t::final_time - soln_time );
 
 		if ( rank == 0 ) {
-      cout << std::string(44, '=') << endl;
-      auto ss = cout.precision();
-      cout.setf( std::ios::scientific );
-      cout.precision(6);
-      cout << "| " << std::setw(8) << "Step:"
+      std::cout << std::string(44, '=') << std::endl;
+      auto ss = std::cout.precision();
+      std::cout.setf( std::ios::scientific );
+      std::cout.precision(6);
+      std::cout << "| " << std::setw(8) << "Step:"
            << " | " << std::setw(13) << "Time:"
            << " | " << std::setw(13) << "Step Size:"
            << " |" << std::endl;
-      cout << "| " << std::setw(8) << time_cnt+1
+      std::cout << "| " << std::setw(8) << time_cnt+1
            << " | " << std::setw(13) << soln_time + (time_step)
            << " | " << std::setw(13) << time_step
            << " |" << std::endl;
-      cout.unsetf( std::ios::scientific );
-      cout.precision(ss);
+      std::cout.unsetf( std::ios::scientific );
+      std::cout.precision(ss);
 		}
 
 // #define USE_FIRST_ORDER_TIME_STEPPING
@@ -407,33 +407,33 @@ int driver(int argc, char** argv)
 
     // move the mesh to n+1/2
     flecsi_execute_task(
-			 move_mesh, 
+			 move_mesh,
  			 apps::hydro,
        single,
-			 mesh, 
+			 mesh,
 			 un,
 			 0.5*time_step
      );
 
 	 	// update solution to n+1/2
     flecsi_execute_task(
-			 apply_update, 
+			 apply_update,
  			 apps::hydro,
        single,
-			 mesh, 
+			 mesh,
 			 0.5*time_step,
 			 dUdt,
        Vc, Mc, uc, pc, dc, ec, Tc, ac
      );
 
     // Update derived solution quantities
-    flecsi_execute_task( 
+    flecsi_execute_task(
       update_state_from_energy,
 			apps::hydro,
 			single,
 			mesh,
 			inputs_t::eos,
-			Vc, Mc, uc, pc, dc, ec, Tc, ac 
+			Vc, Mc, uc, pc, dc, ec, Tc, ac
 		);
 
     //--------------------------------------------------------------------------
@@ -441,7 +441,7 @@ int driver(int argc, char** argv)
     //--------------------------------------------------------------------------
 
     // compute the nodal velocity at n=1/2
-    flecsi_execute_task( 
+    flecsi_execute_task(
       evaluate_nodal_state,
       apps::hydro,
       single,
@@ -486,33 +486,33 @@ int driver(int argc, char** argv)
 
     // move the mesh to n+1
     flecsi_execute_task(
-			 move_mesh, 
+			 move_mesh,
  			 apps::hydro,
        single,
-			 mesh, 
+			 mesh,
 			 un,
 			 time_step
      );
-    
+
 	 	// update solution to n+1/2
     flecsi_execute_task(
-			 apply_update, 
+			 apply_update,
  			 apps::hydro,
        single,
-			 mesh, 
+			 mesh,
 			 time_step,
 			 dUdt,
        Vc, Mc, uc, pc, dc, ec, Tc, ac
      );
 
     // Update derived solution quantities
-    flecsi_execute_task( 
+    flecsi_execute_task(
       update_state_from_energy,
 			apps::hydro,
 			single,
 			mesh,
 			inputs_t::eos,
-			Vc, Mc, uc, pc, dc, ec, Tc, ac 
+			Vc, Mc, uc, pc, dc, ec, Tc, ac
 		);
 
 
@@ -523,14 +523,14 @@ int driver(int argc, char** argv)
     // update time
     soln_time += time_step;
     time_cnt++;
-  
+
     // now output the solution
-    if ( has_output && 
-        (time_cnt % inputs_t::output_freq == 0 || 
+    if ( has_output &&
+        (time_cnt % inputs_t::output_freq == 0 ||
          num_steps==inputs_t::max_steps-1 ||
          std::abs(soln_time-inputs_t::final_time) < epsilon
-        )  
-      ) 
+        )
+      )
     {
       flecsi_execute_task(
         output,
@@ -555,12 +555,12 @@ int driver(int argc, char** argv)
 
   if ( rank == 0 ) {
 
-    cout << "Final solution time is " 
+    std::cout << "Final solution time is "
          << std::scientific << std::setprecision(2) << soln_time
          << " after " << time_cnt << " steps." << std::endl;
 
-    
-    std::cout << "Elapsed wall time is " << std::setprecision(4) << std::fixed 
+
+    std::cout << "Elapsed wall time is " << std::setprecision(4) << std::fixed
               << tdelta << "s." << std::endl;
 
   }

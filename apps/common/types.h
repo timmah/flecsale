@@ -34,19 +34,8 @@ using counter_t = mesh_t::counter_t;
 
 using eos_t = flecsale::eos::ideal_gas_t<real_t>;
 
-// using eqns_t = typename flecsale::eqns::lagrange_eqns_t<real_t, mesh_t::num_dimensions>;
-
 template< std::size_t N >
 using matrix__ = ristra::math::matrix< real_t, N, N >;
-
-// using flux_data_t = eqns_t::flux_data_t;
-
-
-// explicitly use some other stuff
-using std::cout;
-using std::cerr;
-using std::endl;
-
 
 // the access permission types
 template<typename T>

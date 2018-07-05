@@ -259,16 +259,16 @@ int driver(int argc, char** argv)
 
     // output the time step
     if ( rank == 0 ) {
-      cout << std::string(80, '=') << endl;
-      auto ss = cout.precision();
-      cout.setf( std::ios::scientific );
-      cout.precision(6);
-      cout << "|  " << "Step:" << std::setw(10) << time_cnt
+      std::cout << std::string(80, '=') << std::endl;
+      auto ss = std::cout.precision();
+      std::cout.setf( std::ios::scientific );
+      std::cout.precision(6);
+      std::cout << "|  " << "Step:" << std::setw(10) << time_cnt
            << "  |  Time:" << std::setw(17) << soln_time
            << "  |  Step Size:" << std::setw(17) << time_step
            << "  |" << std::endl;
-      cout.unsetf( std::ios::scientific );
-      cout.precision(ss);
+      std::cout.unsetf( std::ios::scientific );
+      std::cout.precision(ss);
     }
 
 #ifdef HAVE_CATALYST
@@ -313,7 +313,7 @@ int driver(int argc, char** argv)
 
   if ( rank == 0 ) {
 
-    cout << "Final solution time is "
+    std::cout << "Final solution time is "
          << std::scientific << std::setprecision(2) << soln_time
          << " after " << time_cnt << " steps." << std::endl;
 
