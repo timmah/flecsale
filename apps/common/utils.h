@@ -9,6 +9,7 @@
 #pragma once
 
 // system includes
+#include <iomanip>
 #include <sstream>
 
 namespace apps {
@@ -17,8 +18,8 @@ namespace common {
 ///////////////////////////////////////////////////////////////////////////////
 //! \brief Tack on an iteration number to a string
 ///////////////////////////////////////////////////////////////////////////////
-static auto zero_padded( 
-  std::size_t n, std::size_t padding = 6 
+static auto zero_padded(
+  std::size_t n, std::size_t padding = 6
 )
 {
   std::stringstream ss;
