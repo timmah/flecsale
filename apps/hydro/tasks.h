@@ -24,6 +24,8 @@
 namespace apps {
 namespace hydro {
 
+using namespace apps::common;
+
 ////////////////////////////////////////////////////////////////////////////////
 //! \brief The main task for setting initial conditions
 //!
@@ -31,9 +33,9 @@ namespace hydro {
 //! \param [in]     ics  the initial conditions to set
 //! \return 0 for success
 ////////////////////////////////////////////////////////////////////////////////
-void initial_conditions( 
+void initial_conditions(
   client_handle_r__<mesh_t>  mesh,
-  inputs_t::ics_function_t ics, 
+  ics_function_t ics,
   eos_t eos,
   real_t soln_time,
   dense_handle_w__<real_t> d,
@@ -48,7 +50,7 @@ void initial_conditions(
   //#pragma omp parallel for
   for ( auto c : mesh.cells( flecsi::owned ) ) {
     std::tie( d(c), v(c), p(c) ) = ics( c->centroid(), soln_time );
-    eqns_t::update_state_from_pressure( 
+    eqns_t::update_state_from_pressure(
       pack( c, d, v, p, e, T, a ),
       eos
     );
@@ -75,7 +77,7 @@ real_t evaluate_time_step(
   real_t CFL,
   real_t max_dt
 ) {
- 
+
   // Loop over each cell, computing the minimum time step,
   // which is also the maximum 1/dt
   real_t dt_inv(0);
@@ -97,7 +99,7 @@ real_t evaluate_time_step(
 
   } // cell
 
-  if ( dt_inv <= 0 ) 
+  if ( dt_inv <= 0 )
     throw_runtime_error( "infinite delta t" );
 
   real_t time_step = 1 / dt_inv;
@@ -105,7 +107,7 @@ real_t evaluate_time_step(
 
   // access the computed time step and make sure its not too large
   time_step = std::min( time_step, max_dt );
-  
+
   return time_step;
 }
 
@@ -115,7 +117,7 @@ real_t evaluate_time_step(
 //! \param [in,out] mesh the mesh object
 //! \return 0 for success
 ////////////////////////////////////////////////////////////////////////////////
-void evaluate_fluxes( 
+void evaluate_fluxes(
   client_handle_r__<mesh_t> mesh,
   dense_handle_r__<real_t> d,
   dense_handle_r__<vector_t> v,
@@ -134,26 +136,26 @@ void evaluate_fluxes(
   {
 
     const auto & f = face_list[fit];
-    
+
     // get the cell neighbors
     const auto & cells = mesh.cells(f);
     auto num_cells = cells.size();
 
     // get the left state
     auto w_left = pack( cells[0], d, v, p, e, T, a );
-    
+
     // compute the face flux
     //
     // interior cell
     if ( num_cells == 2 ) {
       auto w_right = pack( cells[1], d, v, p, e, T, a );
       flux(f) = flux_function<eqns_t>( w_left, w_right, f->normal() );
-    } 
+    }
     // boundary cell
     else {
       flux(f) = boundary_flux<eqns_t>( w_left, f->normal() );
     }
-   
+
     // scale the flux by the face area
     flux(f) *= f->area();
 
@@ -180,7 +182,7 @@ void gather_time_step(
 //! \param [in,out] mesh the mesh object
 //! \return 0 for success
 ////////////////////////////////////////////////////////////////////////////////
-void apply_update( 
+void apply_update(
   client_handle_r__<mesh_t> mesh,
   eos_t eos,
   real_t delta_t,
@@ -213,7 +215,7 @@ void apply_update(
 
     // loop over each connected edge
     for ( auto f : mesh.faces(c) ) {
-      
+
       // get the cell neighbors
       auto neigh = mesh.cells(f);
       auto num_neigh = neigh.size();
@@ -237,7 +239,7 @@ void apply_update(
     eqns_t::update_state_from_energy( u, eos );
 
     // check the solution quantities
-    if ( eqns_t::internal_energy(u) < 0 || eqns_t::density(u) < 0 ) 
+    if ( eqns_t::internal_energy(u) < 0 || eqns_t::density(u) < 0 )
       throw_runtime_error( "Negative density or internal energy encountered!" );
 
   } // for
@@ -248,8 +250,8 @@ void apply_update(
 ////////////////////////////////////////////////////////////////////////////////
 /// \brief output the solution
 ////////////////////////////////////////////////////////////////////////////////
-void output( 
-  client_handle_r__<mesh_t> mesh, 
+void output(
+  client_handle_r__<mesh_t> mesh,
   char_array_t prefix,
 	char_array_t postfix,
 	size_t iteration,
@@ -262,13 +264,13 @@ void output(
   dense_handle_r__<real_t> a
 ) {
   clog(info) << "OUTPUT MESH TASK" << std::endl;
- 
+
   // get the context
   auto & context = flecsi::execution::context_t::instance();
   auto rank = context.color();
 
   // figure out this ranks file name
-  auto output_filename = 
+  auto output_filename =
     prefix.str() + "_rank" + apps::common::zero_padded(rank) +
     "." + apps::common::zero_padded(iteration) + "." + postfix.str();
 
@@ -281,7 +283,7 @@ void output(
 ////////////////////////////////////////////////////////////////////////////////
 /// \brief output the solution
 ////////////////////////////////////////////////////////////////////////////////
-void print( 
+void print(
   client_handle_r__<mesh_t> mesh,
   char_array_t filename
 ) {
@@ -291,10 +293,10 @@ void print(
   auto rank = context.color();
 
   clog(info) << "PRINT MESH ON RANK " << rank << std::endl;
- 
+
   // figure out this ranks file name
   auto name_and_ext = ristra::utils::split_extension( filename.str() );
-  auto output_filename = 
+  auto output_filename =
     name_and_ext.first + "_rank" + apps::common::zero_padded(rank) +
     "." + name_and_ext.second;
 
@@ -305,7 +307,7 @@ void print(
 
   // close file
   file.close();
-  
+
 }
 
 

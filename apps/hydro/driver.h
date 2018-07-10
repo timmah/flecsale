@@ -10,6 +10,7 @@
 
 // common headers
 #include "../common/application_init.h"
+#include "../common/input_types.h"
 
 // hydro includes
 #include "tasks.h"
@@ -108,15 +109,14 @@ flecsi_register_field(
 ///////////////////////////////////////////////////////////////////////////////
 int driver(int argc, char** argv)
 {
-  using apps::common::Sim_Config;
+  using namespace apps::common;
 
   // get the context
   auto & context = flecsi::execution::context_t::instance();
   auto rank = context.color();
 
-  auto sim_config = flecsi_get_global_object(0,config,Sim_Config);
-  std::string s = sim_config->hoopla();
-  std::cout << "Sim_Config: \"" << s << "\"\n";
+  auto p_sim_config = flecsi_get_global_object(0,config,Sim_Config);
+  Sim_Config & sim_config(*p_sim_config);
 
   //===========================================================================
   // Mesh Setup
@@ -164,6 +164,10 @@ int driver(int argc, char** argv)
   real_t soln_time{0};
   size_t time_cnt{0};
 
+  auto ics = sim_config.get_initial_conditions_function();
+  Sim_Config::eos_ptr_t p_eos = sim_config.get_eos();
+  Sim_Config::eos_t &eos(*p_eos);
+
   // now call the main task to set the ics.  Here we set primitive/physical
   // quanties
   flecsi_execute_task(
@@ -171,8 +175,8 @@ int driver(int argc, char** argv)
     apps::hydro,
     single,
     mesh,
-    inputs_t::ics,
-    inputs_t::eos,
+    ics,
+    eos,
     soln_time,
     d, v, e, p, T, a
   );
@@ -186,28 +190,21 @@ int driver(int argc, char** argv)
   // Pre-processing
   //===========================================================================
 
-  auto prefix_char = flecsi_sp::utils::to_char_array( inputs_t::prefix );
- 	auto postfix_char =  flecsi_sp::utils::to_char_array( "exo" );
+    auto prefix_char =
+        flecsi_sp::utils::to_char_array(sim_config.get_file_prefix());
+    auto suffix_char = flecsi_sp::utils::to_char_array("exo");
 
-  // now output the solution
-  auto has_output = (inputs_t::output_freq > 0);
-  if (has_output) {
-    flecsi_execute_task(
-      output,
- 			apps::hydro,
- 			single,
- 			mesh,
- 			prefix_char,
- 			postfix_char,
-			time_cnt,
-      soln_time,
- 			d, v, e, p, T, a
-    );
+    // now output the solution
+    auto has_output = (sim_config.get_output_freq() > 0);
+    if (has_output) {
+      flecsi_execute_task(output, apps::hydro, single, mesh, prefix_char,
+                          suffix_char, time_cnt, soln_time, d, v, e, p, T, a);
   }
 
 
   // dump connectivity
-  auto name = flecsi_sp::utils::to_char_array( inputs_t::prefix+".txt" );
+  auto name =
+      flecsi_sp::utils::to_char_array(sim_config.get_file_prefix() + ".txt");
   auto f = flecsi_execute_task(print, apps::hydro, single, mesh, name);
   f.wait();
 
@@ -218,11 +215,9 @@ int driver(int argc, char** argv)
   // Residual Evaluation
   //===========================================================================
 
-  for (
-    size_t num_steps = 0;
-    (num_steps < inputs_t::max_steps && soln_time < inputs_t::final_time);
-    ++num_steps
-  ) {
+  for (size_t num_steps = 0; (num_steps < sim_config.get_max_steps() &&
+                              soln_time < sim_config.get_final_time());
+       ++num_steps) {
 
     //-------------------------------------------------------------------------
     // compute the time step
@@ -230,7 +225,7 @@ int driver(int argc, char** argv)
     // we dont need the time step yet
     auto local_future_time_step = flecsi_execute_task(
       evaluate_time_step, apps::hydro, single, mesh, d, v, e, p, T, a,
-      inputs_t::CFL, inputs_t::final_time - soln_time
+      sim_config.get_CFL(), sim_config.get_final_time() - soln_time
     );
 
     //-------------------------------------------------------------------------
@@ -246,7 +241,7 @@ int driver(int argc, char** argv)
 
     // Loop over each cell, scattering the fluxes to the cell
     flecsi_execute_task(
-      apply_update, apps::hydro, single, mesh, inputs_t::eos,
+      apply_update, apps::hydro, single, mesh, eos,
       time_step, F, d, v, e, p, T, a
     );
 
@@ -274,31 +269,30 @@ int driver(int argc, char** argv)
 #ifdef HAVE_CATALYST
     if (!catalyst_scripts.empty()) {
       auto vtk_grid = mesh::to_vtk( mesh );
-      insitu.process(
-        vtk_grid, soln_time, num_steps, (num_steps==inputs_t::max_steps-1)
-      );
+      insitu.process(vtk_grid, soln_time, num_steps,
+                     (num_steps == sim_config.get_max_steps() - 1));
     }
 #endif
 
 
     // now output the solution
     if ( has_output &&
-        (time_cnt % inputs_t::output_freq == 0 ||
-         num_steps==inputs_t::max_steps-1 ||
-         std::abs(soln_time-inputs_t::final_time) < epsilon
+        (time_cnt % sim_config.get_output_freq() == 0 ||
+         num_steps==sim_config.get_max_steps()-1 ||
+         std::abs(soln_time-sim_config.get_final_time()) < epsilon
         )
       )
     {
       flecsi_execute_task(
         output,
-	 			apps::hydro,
- 				single,
- 				mesh,
-	 			prefix_char,
- 				postfix_char,
- 				time_cnt,
+        apps::hydro,
+        single,
+        mesh,
+        prefix_char,
+        suffix_char,
+        time_cnt,
         soln_time,
- 				d, v, e, p, T, a
+        d, v, e, p, T, a
       );
     }
 

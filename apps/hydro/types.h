@@ -12,13 +12,15 @@
 #include <flecsale/eqns/euler_eqns.h>
 #include <flecsale/eqns/flux.h>
 
-#include "../common/utils.h"
 #include "../common/types.h"
+#include "../common/utils.h"
 
 namespace apps {
 namespace hydro {
 
-using eqns_t = typename flecsale::eqns::euler_eqns_t<real_t, mesh_t::num_dimensions>;
+using eqns_t =
+    typename flecsale::eqns::euler_eqns_t<apps::common::real_t,
+                                          apps::common::mesh_t::num_dimensions>;
 
 using flux_data_t = eqns_t::flux_data_t;
 
