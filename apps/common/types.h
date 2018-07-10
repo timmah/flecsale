@@ -23,14 +23,24 @@
 
 #include "utils.h"
 
+#include <map>
+
 namespace apps {
-namespace hydro {
+namespace common {
 
 // mesh and some underlying data types
 using mesh_t = flecsi_sp::burton::burton_mesh_t;
 using real_t = mesh_t::real_t;
 using vector_t = mesh_t::vector_t;
 using counter_t = mesh_t::counter_t;
+using string_t = std::string;
+using args_map_t = std::map<string_t,string_t>;
+
+//! Types for extracting initial condition functions from
+//! an input source.
+using ics_return_t   = std::tuple<real_t,vector_t,real_t>;
+using ics_function_t =
+  std::function<ics_return_t(vector_t const &, real_t const & t)>;
 
 using eos_t = flecsale::eos::ideal_gas_t<real_t>;
 
@@ -137,7 +147,7 @@ public:
   { return 0; };
 
   virtual ~boundary_condition_t() {}
-};
+}; // class boundary_condition_t
 
 ////////////////////////////////////////////////////////////////////////////////
 //! \brief Specialization of the boundary condition type for symmetry
@@ -151,7 +161,7 @@ public:
   { return true; }
 
   virtual ~symmetry_boundary_condition_t() {}
-};
+}; // class symmetry_boundary_condition_t
 
 ////////////////////////////////////////////////////////////////////////////////
 //! \brief A function to create a new boundary object based on a string.
@@ -172,7 +182,18 @@ inline boundary_condition_t * make_boundary_condition( const std::string & str )
     return nullptr;
   }
 
-}
+} // make_boundary_condition
+
+//! convenient types for extracting boundary condition functions from
+//! an input source.
+//! \{
+using bcs_t = apps::common::boundary_condition_t;
+using bcs_ptr_t = std::shared_ptr< bcs_t >;
+using bcs_function_t =
+  std::function< bool(const vector_t & x, const real_t & t) >;
+using bcs_pair = std::pair< bcs_ptr_t, bcs_function_t >;
+using bcs_list_t = std::vector< bcs_pair>;
+//! \}
 
 
 //! \brief a type for storing boundary tags
