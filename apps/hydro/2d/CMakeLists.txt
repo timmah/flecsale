@@ -6,7 +6,6 @@
 add_executable( hydro_2d
   $<TARGET_OBJECTS:apps_common>
   driver.cc
-#  inputs.cc
   ${FLECSI_SP_BURTON_SPECIALIZATION_INIT}
   ${FLECSALE_RUNTIME_DRIVER}
   ${FLECSALE_RUNTIME_MAIN}
