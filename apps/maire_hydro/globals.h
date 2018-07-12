@@ -15,14 +15,11 @@
 
 namespace apps {
 namespace hydro {
-
 namespace globals {
 
 // the boundary mapper
-boundary_map_t boundaries;
+apps::common::boundary_map_t boundaries;
 
-
-} // namespace
-
-} // namespace
-} // namespace
+} // globals
+} // hydro
+} // apps

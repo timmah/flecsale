@@ -7,16 +7,19 @@
 /// \brief Simple tests related to solving full hydro solutions.
 ///////////////////////////////////////////////////////////////////////////////
 
-// hydro includes
+// common headers
+#include "../common/application_init.h"
+#include "../common/input_types.h"
+
+// maire_hydro includes
 #include "globals.h"
 #include "tasks.h"
 #include "types.h"
 
-// user includes
+// library includes
 #include <ristra/utils/time_utils.h>
 
-
-// system includes
+// standard includes
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -161,6 +164,24 @@ flecsi_register_field(
   mesh_t::index_spaces_t::corners
 );
 
+bool check_config(Sim_Config const &c, bool verbose = true){
+  using err_set_t = std::set<string_t>;
+  err_set_t err_set;
+  bool is_ok(true);
+  bool time_constants_ok = c.has_time_constants();
+  if(!time_constants_ok){
+    err_set.insert("time_constants");
+  }
+  is_ok = is_ok && time_constants_ok;
+  if(!is_ok){
+    printf("%s:%i Configuration is lacking. Problems include:\n",
+      __FUNCTION__,__LINE__);
+    for(auto &item: err_set){
+      std::cout << "\t" << item << "\n";
+    }
+  }
+  return is_ok;
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 //! \brief A sample test of the hydro solver
@@ -174,6 +195,17 @@ int driver(int argc, char** argv)
   // get the context
   auto & context = flecsi::execution::context_t::instance();
   auto rank = context.color();
+
+  // get the simulation configuration
+  Sim_Config &sim_config(apps::common::get_teh_config());
+
+  // check configuration
+  bool verbose_check = true;
+  bool is_config_ok = check_config(sim_config, verbose_check);
+  if(!is_config_ok){
+    return 0;
+  }
+
 
   //===========================================================================
   // Mesh Setup
@@ -210,7 +242,6 @@ int driver(int argc, char** argv)
   //===========================================================================
   // Access what we need
   //===========================================================================
-
   // cell data
   auto Vc = flecsi_get_handle(mesh, hydro, cell_volume,     real_t, dense, 0);
   auto Mc = flecsi_get_handle(mesh, hydro, cell_mass,       real_t, dense, 0);
@@ -222,7 +253,7 @@ int driver(int argc, char** argv)
   auto Tc = flecsi_get_handle(mesh, hydro, cell_temperature,     real_t, dense, 0);
   auto ac = flecsi_get_handle(mesh, hydro, cell_sound_speed,     real_t, dense, 0);
 
-	auto uc0 = flecsi_get_handle(mesh, hydro, cell_velocity, vector_t, dense, 1);
+  auto uc0 = flecsi_get_handle(mesh, hydro, cell_velocity, vector_t, dense, 1);
   auto ec0 = flecsi_get_handle(mesh, hydro, cell_internal_energy, real_t, dense, 1);
 
   // node state
@@ -241,7 +272,8 @@ int driver(int argc, char** argv)
 
   // install each boundary
   tag_t bc_key = 0;
-  for ( const auto & bc_pair : inputs_t::bcs )
+  bcs_list_t bcs = sim_config.get_bcs();
+  for ( const auto & bc_pair : bcs )
   {
     auto bc_type = bc_pair.first.get();
     auto bc_function = bc_pair.second;
@@ -256,9 +288,13 @@ int driver(int argc, char** argv)
         bc_function);
   }
 
+
   //===========================================================================
   // Initial conditions
   //===========================================================================
+  ics_function_t const & ics = sim_config.get_initial_conditions_function();
+  Sim_Config::eos_ptr_t p_eos = sim_config.get_eos();
+  Sim_Config::eos_t &eos(*p_eos);
 
   // now call the main task to set the ics.  Here we set primitive/physical
   // quanties
@@ -267,8 +303,8 @@ int driver(int argc, char** argv)
     apps::hydro,
     single,
     mesh,
-    inputs_t::ics,
-    inputs_t::eos,
+    ics,
+    eos,
     soln_time,
     Vc, Mc, uc, pc, dc, ec, Tc, ac
   );
@@ -278,47 +314,45 @@ int driver(int argc, char** argv)
   // Pre-processing
   //===========================================================================
 
-  auto prefix_char = flecsi_sp::utils::to_char_array( inputs_t::prefix );
- 	auto postfix_char =  flecsi_sp::utils::to_char_array( "exo" );
+  auto prefix_char =
+      flecsi_sp::utils::to_char_array(sim_config.get_file_prefix());
+  auto suffix_char = flecsi_sp::utils::to_char_array("exo");
 
   // now output the solution
-  auto has_output = (inputs_t::output_freq > 0);
+  auto has_output = (sim_config.get_output_freq() > 0);
   if (has_output) {
     flecsi_execute_task(
       output,
- 			apps::hydro,
- 			single,
- 			mesh,
- 			prefix_char,
- 			postfix_char,
-			time_cnt,
+      apps::hydro,
+      single,
+      mesh,
+      prefix_char,
+      suffix_char,
+      time_cnt,
       soln_time,
- 			dc, uc, ec, pc, Tc, ac
+      dc, uc, ec, pc, Tc, ac
     );
   }
 
 
-
   // dump connectivity
-  auto name = flecsi_sp::utils::to_char_array( inputs_t::prefix+".txt" );
-  auto f = flecsi_execute_task(print, apps::hydro, single, mesh, name);
-  f.wait();
+  auto name = flecsi_sp::utils::to_char_array( sim_config.get_file_prefix()+".txt" );
+  // auto f = flecsi_execute_task(print, apps::hydro, single, mesh, name);
+  // f.wait();
 
   // start a clock
   auto tstart = ristra::utils::get_wall_time();
 
-	// the initial time step
-	auto time_step = inputs_t::initial_time_step;
+  // the initial time step
+  auto time_step = sim_config.get_initial_time_step();
 
   //===========================================================================
   // Residual Evaluation
   //===========================================================================
 
-  for (
-    size_t num_steps = 0;
-    (num_steps < inputs_t::max_steps && soln_time < inputs_t::final_time);
-    ++num_steps
-  ) {
+  for (size_t num_steps = 0; (num_steps < sim_config.get_max_steps() &&
+                              soln_time < sim_config.get_final_time());
+       ++num_steps) {
 
     //--------------------------------------------------------------------------
     // Begin Time step
@@ -335,11 +369,11 @@ int driver(int argc, char** argv)
 
     // estimate the nodal velocity at n=0
     flecsi_execute_task(
-			 estimate_nodal_state,
-			 apps::hydro,
+       estimate_nodal_state,
+       apps::hydro,
        single,
-			 mesh, uc, un
-		);
+       mesh, uc, un
+    );
 
     // compute the nodal velocity at n=0
     flecsi_execute_task(
@@ -354,34 +388,36 @@ int driver(int argc, char** argv)
 
     // compute the fluxes
     flecsi_execute_task(
-			 evaluate_residual,
-		 	 apps::hydro,
-			 single,
-			 mesh,
-			 un, npc, Fpc, dUdt
+       evaluate_residual,
+       apps::hydro,
+       single,
+       mesh,
+       un, npc, Fpc, dUdt
      );
 
     //--------------------------------------------------------------------------
     // Time step evaluation
     //--------------------------------------------------------------------------
 
+    apps::common::time_constants_t const& tcs(sim_config.get_time_constants());
+
     // compute the time step
     auto local_time_step_future = flecsi_execute_task(
-			evaluate_time_step,
-	 		apps::hydro,
-	 		single,
-			mesh,
-			inputs_t::CFL,
-			time_step,
-			ac, dUdt
- 		);
+      evaluate_time_step,
+      apps::hydro,
+      single,
+      mesh,
+      tcs,
+      time_step,
+      ac, dUdt
+    );
 
     // now we need it
     time_step =
       flecsi::execution::context_t::instance().reduce_min(local_time_step_future);
-    time_step = std::min( time_step, inputs_t::final_time - soln_time );
+    time_step = std::min( time_step, sim_config.get_final_time() - soln_time );
 
-		if ( rank == 0 ) {
+    if ( rank == 0 ) {
       std::cout << std::string(44, '=') << std::endl;
       auto ss = std::cout.precision();
       std::cout.setf( std::ios::scientific );
@@ -396,45 +432,47 @@ int driver(int argc, char** argv)
            << " |" << std::endl;
       std::cout.unsetf( std::ios::scientific );
       std::cout.precision(ss);
-		}
+    }
 
 // #define USE_FIRST_ORDER_TIME_STEPPING
 #ifndef USE_FIRST_ORDER_TIME_STEPPING // set to 0 for first order
 
     //--------------------------------------------------------------------------
     // Move to n+1/2
-		//--------------------------------------------------------------------------
+    //--------------------------------------------------------------------------
 
     // move the mesh to n+1/2
     flecsi_execute_task(
-			 move_mesh,
- 			 apps::hydro,
+       move_mesh,
+       apps::hydro,
        single,
-			 mesh,
-			 un,
-			 0.5*time_step
+       mesh,
+       un,
+       0.5*time_step
      );
 
-	 	// update solution to n+1/2
+    // update solution to n+1/2
     flecsi_execute_task(
-			 apply_update,
- 			 apps::hydro,
+       apply_update,
+       apps::hydro,
        single,
-			 mesh,
-			 0.5*time_step,
-			 dUdt,
+       mesh,
+       0.5*time_step,
+       dUdt,
        Vc, Mc, uc, pc, dc, ec, Tc, ac
      );
+
+    Sim_Config::eos_ptr_t p_eos(sim_config.get_eos());
 
     // Update derived solution quantities
     flecsi_execute_task(
       update_state_from_energy,
-			apps::hydro,
-			single,
-			mesh,
-			inputs_t::eos,
-			Vc, Mc, uc, pc, dc, ec, Tc, ac
-		);
+      apps::hydro,
+      single,
+      mesh,
+      *p_eos,
+      Vc, Mc, uc, pc, dc, ec, Tc, ac
+    );
 
     //--------------------------------------------------------------------------
     // Corrector : Evaluate Forces at n=1/2
@@ -453,67 +491,67 @@ int driver(int argc, char** argv)
 
     // compute the fluxes
     flecsi_execute_task(
-			 evaluate_residual,
-		 	 apps::hydro,
-			 single,
-			 mesh,
-			 un, npc, Fpc, dUdt
+       evaluate_residual,
+       apps::hydro,
+       single,
+       mesh,
+       un, npc, Fpc, dUdt
      );
 
     //--------------------------------------------------------------------------
     // Move to n+1
     //--------------------------------------------------------------------------
 
-	  // restore the solution to n=0
+    // restore the solution to n=0
     flecsi_execute_task(
-			restore_coordinates,
- 			apps::hydro,
- 			single,
- 			mesh,
-			xn
- 		);
+      restore_coordinates,
+      apps::hydro,
+      single,
+      mesh,
+      xn
+    );
 
     flecsi_execute_task(
-	 		restore_solution,
- 			apps::hydro,
- 			single,
- 			mesh,
- 			uc0, uc, ec0, ec
- 		);
+      restore_solution,
+      apps::hydro,
+      single,
+      mesh,
+      uc0, uc, ec0, ec
+    );
 
 #endif // USE_FIRST_ORDER_TIME_STEPPING
 
 
     // move the mesh to n+1
     flecsi_execute_task(
-			 move_mesh,
- 			 apps::hydro,
+       move_mesh,
+       apps::hydro,
        single,
-			 mesh,
-			 un,
-			 time_step
+       mesh,
+       un,
+       time_step
      );
 
-	 	// update solution to n+1/2
+    // update solution to n+1/2
     flecsi_execute_task(
-			 apply_update,
- 			 apps::hydro,
+       apply_update,
+       apps::hydro,
        single,
-			 mesh,
-			 time_step,
-			 dUdt,
+       mesh,
+       time_step,
+       dUdt,
        Vc, Mc, uc, pc, dc, ec, Tc, ac
      );
 
     // Update derived solution quantities
     flecsi_execute_task(
       update_state_from_energy,
-			apps::hydro,
-			single,
-			mesh,
-			inputs_t::eos,
-			Vc, Mc, uc, pc, dc, ec, Tc, ac
-		);
+      apps::hydro,
+      single,
+      mesh,
+      *p_eos,
+      Vc, Mc, uc, pc, dc, ec, Tc, ac
+    );
 
 
     //--------------------------------------------------------------------------
@@ -526,22 +564,22 @@ int driver(int argc, char** argv)
 
     // now output the solution
     if ( has_output &&
-        (time_cnt % inputs_t::output_freq == 0 ||
-         num_steps==inputs_t::max_steps-1 ||
-         std::abs(soln_time-inputs_t::final_time) < epsilon
+        (time_cnt % sim_config.get_output_freq() == 0 ||
+         num_steps==sim_config.get_max_steps()-1 ||
+         std::abs(soln_time-sim_config.get_final_time()) < epsilon
         )
       )
     {
       flecsi_execute_task(
         output,
-	 			apps::hydro,
- 				single,
- 				mesh,
-	 			prefix_char,
- 				postfix_char,
- 				time_cnt,
+        apps::hydro,
+        single,
+        mesh,
+        prefix_char,
+        suffix_char,
+        time_cnt,
         soln_time,
- 				dc, uc, ec, pc, Tc, ac
+        dc, uc, ec, pc, Tc, ac
       );
     }
 
@@ -550,7 +588,6 @@ int driver(int argc, char** argv)
   //===========================================================================
   // Post-process
   //===========================================================================
-
   auto tdelta = ristra::utils::get_wall_time() - tstart;
 
   if ( rank == 0 ) {

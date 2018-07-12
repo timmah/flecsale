@@ -17,7 +17,8 @@
 namespace apps {
 namespace hydro {
 
-using eqns_t = typename flecsale::eqns::lagrange_eqns_t<real_t, mesh_t::num_dimensions>;
+using eqns_t = typename flecsale::eqns::lagrange_eqns_t<
+    apps::common::real_t, apps::common::mesh_t::num_dimensions>;
 
 using flux_data_t = eqns_t::flux_data_t;
 
