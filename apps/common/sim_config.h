@@ -20,7 +20,9 @@
 
 // standard includes
 #include <memory>
+#include <optional>
 #include <tuple>
+#include <vector>
 
 namespace apps::common{
 
@@ -44,6 +46,9 @@ public:
   using input_engine_ptr_t = std::shared_ptr<input_engine_t>;
   using ics_function_t = apps::common::ics_function_t;
 
+  using bcs_function_container_t = std::vector<bcs_function_t>;
+  using bc_function_types_t = std::vector<string_t>;
+
   // Public interface
 
   //! Ctor
@@ -54,10 +59,17 @@ public:
   }
 
   /**\brief Get an initial conditions function */
-  ics_function_t get_initial_conditions_function() const { return m_ics; }
+  ics_function_t const &get_initial_conditions_function() const {
+    if(!m_ics){
+      printf("%s:%i HERE invalid m_ics \n",__FUNCTION__,__LINE__);
+    }
+    return m_ics;
+  }
 
   /**\brief Set the initial conditions function */
-  void set_initial_conditions_function(ics_function_t ics) { m_ics = ics; }
+  void set_initial_conditions_function(ics_function_t const &ics) {
+    m_ics = ics;
+  }
 
   string_t get_eos_type() const { return m_eos_type; }
 
@@ -74,6 +86,8 @@ public:
   real_t get_final_time() const { return m_final_time; }
 
   real_t get_CFL() const { return m_CFL; }
+
+  real_t get_initial_time_step() const { return m_initial_time_step; }
 
   void set_eos_type(string_t const& e_t) { m_eos_type = e_t; }
 
@@ -93,7 +107,19 @@ public:
 
   void set_CFL( real_t const cfl) { m_CFL = cfl; }
 
+  void set_initial_time_step(real_t const initial_time_step) {
+    m_initial_time_step = initial_time_step;
+  }
+
   void set_file( string_t const &file) { m_file = file; }
+
+  bool has_time_constants() const { return m_time_constants.has_value(); }
+
+  void set_time_constants(time_constants_t const &tc) {
+    m_time_constants = tc;
+  }
+
+  time_constants_t const &get_time_constants() const { return *m_time_constants; }
 
   /**\brief Construct an EOS object wrapped in unique_ptr.
    *
@@ -106,23 +132,36 @@ public:
           std::make_unique<ideal_t>(m_gas_constant, m_specific_heat);
       return std::move(peos);
     }
-    // std::set<string_t> known_eoses{"ideal_gas"};
-    // OneOf(eos_type, known_eoses);
+    std::set<string_t> known_eoses{"ideal_gas"};
+    bool is_a_mess = !OneOf(eos_type, known_eoses);
+    // if(is_a_mess){
+      printf("%s:%i get_eos is about to return a null pointer, eos_type = %s\n",
+             __FUNCTION__, __LINE__, m_eos_type.c_str());
+
+      fflush(stdout);
+    // }
     return nullptr;
   } // get_eos
 
+  //--------------------------------------------------------------------------
+  // Boundary conditions
+  //--------------------------------------------------------------------------
+  /**\brief Does the simulation configuration include any boundary conditions?*/
+  bool has_bcs() const { return m_bc_funcs.size() > 0; }
+
+  bcs_function_container_t &bcs_functions() { return m_bc_funcs; }
+
+  bc_function_types_t &bcs_types() { return m_bc_types; }
+
   /*!\brief Get the list of boundary conditions functions */
-  template <typename bcs_func_t>
-  bcs_list_t get_bcs(
-    std::vector<init_value<string_t>> &iv_bcs_types,
-    std::vector<init_value<bcs_func_t>> &iv_bcs_funcs
-    ){
-    Require(iv_bcs_funcs.size() == dim,"size of vector != dim");
-    Require(iv_bcs_types.size() == dim,"size of vector != dim");
+  // template <typename bcs_func_t>
+  bcs_list_t get_bcs() {
+    Require(m_bc_funcs.size() == dim,"size of vector != dim");
+    Require(m_bc_types.size() == dim,"size of vector != dim");
     bcs_list_t bcs;
     for(auto i = 0; i < dim; ++i){
-      string_t bc_type = iv_bcs_types[i].get();
-      bcs_func_t bc_func = iv_bcs_funcs[i].get();
+      string_t bc_type = m_bc_types[i];
+      bcs_function_t bc_func = m_bc_funcs[i];
       bcs_ptr_t bc_object(make_boundary_condition(bc_type));
       bcs.push_back( std::make_pair(bc_object, bc_func));
     }
@@ -151,6 +190,9 @@ public:
   // } // get_mesh
 
 private:
+  bcs_function_container_t m_bc_funcs;
+  bc_function_types_t m_bc_types;
+
   ics_function_t m_ics;
 
   string_t m_eos_type;
@@ -162,9 +204,13 @@ private:
   real_t m_specific_heat;
   real_t m_final_time;
   real_t m_CFL;
+  real_t m_initial_time_step;
 
   size_t m_output_freq;
   size_t m_max_steps;
+
+  std::optional<time_constants_t> m_time_constants;
+
 }; // Sim_Config
 
 } // apps::common::

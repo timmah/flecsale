@@ -12,10 +12,18 @@
 #include <flecsi/execution/execution.h>
 
 #include <string>
+#include <vector>
+
+namespace apps::common{
+
+Sim_Config &get_teh_config();
+
+} // apps::common::
+
 
 namespace flecsi_sp::burton{
 
-flecsi_register_global_object(0, config, apps::common::Sim_Config);
+// flecsi_register_global_object(0, config, apps::common::Sim_Config);
 
 /**\brief Setup and call parse_arguments.
  *\return 0 if h called, 1 if ? called, 2 otherwise.
@@ -75,11 +83,20 @@ int process_args(int argc, char ** argv, apps::common::args_map_t &arg_map){
  *\tparam base_problem_t: struct that can provide a registry when called. Since
  *the base problems vary from app to app, it is used as a parameter.
  *
- * Note: this function is declared in burton_specialization_init.h
+ * Note: currently, this configuration is overridden in one respect:
+ * fleci_sp::burton::specialization_tlt_init uses the -m command line
+ * flag to set the mesh file. Eventually, we want to eliminate that, possibly
+ * in favor of a command-line configuration source.
+ *
+ * Note: non-templated version of this function, application_tlt_init,
+ * is declared in burton_specialization_init.h. A flecsale app must call an
+ * instantiation of application_tlt_init_templ from
+ * flecsi_sp::burton::application_tlt_init.
  */
 template <class base_problem_t>
 void application_tlt_init_templ(int argc, char **argv){
   using namespace apps::common;
+  constexpr size_t dim = flecsale_input_traits::dim;
 
   // create and initialize input_engine
   Sim_Config::input_engine_ptr_t sp_ie =
@@ -93,12 +110,19 @@ void application_tlt_init_templ(int argc, char **argv){
   init_value<real_t> iv_final_time("final_time");
   init_value<real_t> iv_gas_constant("gas_constant");
   init_value<real_t> iv_specific_heat("specific_heat");
+  init_value<real_t> iv_initial_time_step("initial_time_step");
+  init_value<real_t> iv_time_constant_acoustic("time_constant_acoustic");
+  init_value<real_t> iv_time_constant_volume("time_constant_volume");
+  init_value<real_t> iv_time_constant_growth("time_constant_growth");
+
   // size_t targets
   init_value<size_t> iv_output_freq("output_freq");
   init_value<size_t> iv_max_steps("max_steps");
   // string targets
   init_value<string_t> iv_file_prefix("prefix");
   init_value<string_t> iv_file_suffix("suffix");
+  std::vector<init_value<string_t>> iv_bc_types;
+
   // init_value<string_t> iv_mesh_type("mesh_type");
   init_value<string_t> iv_eos_type("eos_type");
   init_value<string_t> iv_file("file");
@@ -109,6 +133,16 @@ void application_tlt_init_templ(int argc, char **argv){
   // init_value<flecsale_input_traits::arr_d_s_t> iv_dimensions("dimensions");
   // initial conditions functions
   init_value<Sim_Config::ics_function_t> iv_ics_func("ics_func");
+
+  // boundary conditions functions
+  std::vector<init_value<bcs_function_t>> iv_bc_funcs;
+  // configure init_value's for boundary condition types and functions
+  for(uint32_t i = 1; i <= dim; ++i){
+    string_t type_n = "bc_type_" + std::to_string(i);
+    iv_bc_types.emplace_back(init_value<string_t>(type_n));
+    string_t func_n = "bc_function_" + std::to_string(i);
+    iv_bc_funcs.emplace_back(init_value<bcs_function_t>(func_n));
+  }
 
   // -------------------------------------------------------------------------
   // register inputs sources
@@ -154,10 +188,23 @@ void application_tlt_init_templ(int argc, char **argv){
 
   sim_config.set_initial_conditions_function(iv_ics_func.get());
 
-  sim_config.set_CFL(iv_CFL.get());
+  // real_t values
+  /* We need to have either time_constants or a scalar CFL */
+  if(iv_CFL.resolved()){
+    sim_config.set_CFL(iv_CFL.get());
+  } else {
+    // Require(iv_time_constant_acoustic.resolved() &&
+    //         iv_time_constant_volume.resolved() &&
+    //         iv_time_constant_growth.resolved() )
+    real_t const acoustic = iv_time_constant_acoustic.get();
+    real_t const volume = iv_time_constant_volume.get();
+    real_t const growth = iv_time_constant_growth.get();
+    sim_config.set_time_constants({acoustic, volume, growth});
+  }
   sim_config.set_final_time(iv_final_time.get());
   sim_config.set_gas_constant(iv_gas_constant.get());
   sim_config.set_specific_heat(iv_specific_heat.get());
+  sim_config.set_initial_time_step(iv_initial_time_step.get());
 
   sim_config.set_output_freq(iv_output_freq.get());
   sim_config.set_max_steps(iv_max_steps.get());
@@ -168,6 +215,23 @@ void application_tlt_init_templ(int argc, char **argv){
   sim_config.set_eos_type(iv_eos_type.get());
   sim_config.set_file(iv_file.get());
 
+  // Ideally, we could read structs without much drama. For now, flatten structs
+
+
+  // Careful with boundary conditions types and functions--they may not
+  // be present in all apps
+  try{
+    auto &config_bc_types(sim_config.bcs_types());
+    auto &config_bc_funcs(sim_config.bcs_functions());
+    for(uint32_t i = 0; i < dim; ++i){
+      init_value<string_t> &iv_type(iv_bc_types[i]);
+      config_bc_types.push_back(iv_type.get());
+      init_value<bcs_function_t> &iv_func(iv_bc_funcs[i]);
+      config_bc_funcs.push_back(iv_func.get());
+    }
+  } catch(std::domain_error &e){
+    // To do--would like some more detailed diagnostics on what failed.
+  }
   return;
 } // application_tlt_init_templ
 

@@ -181,7 +181,6 @@ inline boundary_condition_t * make_boundary_condition( const std::string & str )
     );
     return nullptr;
   }
-
 } // make_boundary_condition
 
 //! convenient types for extracting boundary condition functions from
@@ -222,11 +221,11 @@ decltype(auto) pack( T && loc, ARGS&&... args )
 ////////////////////////////////////////////////////////////////////////////////
 struct time_constants_t {
 
-  real_t accoustic = 1.0;
+  real_t acoustic = 1.0;
   real_t volume = 1.0;
   real_t growth = 0.0;
 
 };
 
-} // namespace hydro
-} // namespace apps
+} // common::
+} // apps::

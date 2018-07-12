@@ -33,10 +33,6 @@ struct flecsale_input_traits{
   using arr_d_r_t = ristra::math::array<real_t,dim>;
   using arr_d_s_t = ristra::math::array<size_t,dim>;
 
-  // using flecsale_vector_t = flecsale::math::array<real_t,dim>;
-  // using flecsale_arr_d_r_t = flecsale::math::array<real_t,dim>;
-  // using flecsale_arr_d_s_t = flecsale::math::array<size_t,dim>;
-
   //! The set of types that will be used for input resolution
   using types = std::tuple<real_t,
                            std::string,
