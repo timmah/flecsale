@@ -253,9 +253,9 @@ void apply_update(
 void output(
   client_handle_r__<mesh_t> mesh,
   char_array_t prefix,
-	char_array_t postfix,
-	size_t iteration,
-	real_t time,
+  char_array_t postfix,
+  size_t iteration,
+  real_t time,
   dense_handle_r__<real_t> d,
   dense_handle_r__<vector_t> v,
   dense_handle_r__<real_t> e,
@@ -265,18 +265,17 @@ void output(
 ) {
   clog(info) << "OUTPUT MESH TASK" << std::endl;
 
-  // get the context
-  auto & context = flecsi::execution::context_t::instance();
+  get the context auto &context = flecsi::execution::context_t::instance();
   auto rank = context.color();
 
   // figure out this ranks file name
   auto output_filename =
-    prefix.str() + "_rank" + apps::common::zero_padded(rank) +
-    "." + apps::common::zero_padded(iteration) + "." + postfix.str();
+      prefix.str() + "_rank" + apps::common::zero_padded(rank) + "." +
+      apps::common::zero_padded(iteration) + "." + postfix.str();
 
   // now outut the mesh
-  flecsale::io::io_exodus__<mesh_t>::write(
-    output_filename, mesh, iteration, time, &d //, v, e, p, T, a
+  flecsale::io::io_exodus__<mesh_t>::write(output_filename, mesh, iteration,
+                                           time, &d //, v, e, p, T, a
   );
 }
 

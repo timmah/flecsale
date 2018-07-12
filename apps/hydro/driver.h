@@ -115,14 +115,16 @@ int driver(int argc, char** argv)
   auto & context = flecsi::execution::context_t::instance();
   auto rank = context.color();
 
-  auto p_sim_config = flecsi_get_global_object(0,config,Sim_Config);
-  Sim_Config & sim_config(*p_sim_config);
+  // get the simulation configuration (see common/application_init.h)
+  Sim_Config &sim_config(apps::common::get_teh_config());
+
+  ics_function_t const & ics = sim_config.get_initial_conditions_function();
 
   //===========================================================================
   // Mesh Setup
   //===========================================================================
 
-  // get the client handle
+ // get the client handle
   auto mesh = flecsi_get_client_handle(mesh_t, meshes, mesh0);
 
   // cout << mesh;
@@ -164,49 +166,41 @@ int driver(int argc, char** argv)
   real_t soln_time{0};
   size_t time_cnt{0};
 
-  auto ics = sim_config.get_initial_conditions_function();
   Sim_Config::eos_ptr_t p_eos = sim_config.get_eos();
+  // Insist(nullptr!=p_eos);
   Sim_Config::eos_t &eos(*p_eos);
 
   // now call the main task to set the ics.  Here we set primitive/physical
-  // quanties
-  flecsi_execute_task(
-    initial_conditions,
-    apps::hydro,
-    single,
-    mesh,
-    ics,
-    eos,
-    soln_time,
-    d, v, e, p, T, a
-  );
+  // quantities
+  flecsi_execute_task(initial_conditions, apps::hydro, single, mesh, ics, eos,
+                      soln_time, d, v, e, p, T, a);
 
-  #ifdef HAVE_CATALYST
-    auto insitu = io::catalyst::adaptor_t(catalyst_scripts);
-    std::cout << "Catalyst on!" << std::endl;
-  #endif
+#ifdef HAVE_CATALYST
+  auto insitu = io::catalyst::adaptor_t(catalyst_scripts);
+  std::cout << "Catalyst on!" << std::endl;
+#endif
 
   //===========================================================================
   // Pre-processing
   //===========================================================================
 
-    auto prefix_char =
-        flecsi_sp::utils::to_char_array(sim_config.get_file_prefix());
-    auto suffix_char = flecsi_sp::utils::to_char_array("exo");
+  auto prefix_char =
+      flecsi_sp::utils::to_char_array(sim_config.get_file_prefix());
+  auto suffix_char = flecsi_sp::utils::to_char_array("exo");
 
-    // now output the solution
-    auto has_output = (sim_config.get_output_freq() > 0);
-    if (has_output) {
-      flecsi_execute_task(output, apps::hydro, single, mesh, prefix_char,
-                          suffix_char, time_cnt, soln_time, d, v, e, p, T, a);
-  }
-
+  // now output the solution
+  auto has_output = (sim_config.get_output_freq() > 0);
+  // if (has_output) {
+  //   flecsi_execute_task(output, apps::hydro, single, mesh, prefix_char,
+  //                       suffix_char, time_cnt, soln_time, d, v, e, p, T, a);
+  // }
 
   // dump connectivity
-  auto name =
-      flecsi_sp::utils::to_char_array(sim_config.get_file_prefix() + ".txt");
-  auto f = flecsi_execute_task(print, apps::hydro, single, mesh, name);
-  f.wait();
+  // auto name =
+  //     flecsi_sp::utils::to_char_array(sim_config.get_file_prefix() +
+  //     ".txt");
+  // auto f = flecsi_execute_task(print, apps::hydro, single, mesh, name);
+  // f.wait();
 
   // start a clock
   auto tstart = ristra::utils::get_wall_time();
@@ -224,45 +218,41 @@ int driver(int argc, char** argv)
 
     // we dont need the time step yet
     auto local_future_time_step = flecsi_execute_task(
-      evaluate_time_step, apps::hydro, single, mesh, d, v, e, p, T, a,
-      sim_config.get_CFL(), sim_config.get_final_time() - soln_time
-    );
+        evaluate_time_step, apps::hydro, single, mesh, d, v, e, p, T, a,
+        sim_config.get_CFL(), sim_config.get_final_time() - soln_time);
 
     //-------------------------------------------------------------------------
     // try a timestep
-
     // compute the fluxes
-    flecsi_execute_task( evaluate_fluxes, apps::hydro, single, mesh,
-        d, v, e, p, T, a, F );
+    flecsi_execute_task(evaluate_fluxes, apps::hydro, single, mesh, d, v, e, p,
+                        T, a, F);
 
     // now we need it
-    auto time_step =
-      flecsi::execution::context_t::instance().reduce_min(local_future_time_step);
+    auto time_step = flecsi::execution::context_t::instance().reduce_min(
+        local_future_time_step);
 
     // Loop over each cell, scattering the fluxes to the cell
-    flecsi_execute_task(
-      apply_update, apps::hydro, single, mesh, eos,
-      time_step, F, d, v, e, p, T, a
-    );
+    flecsi_execute_task(apply_update, apps::hydro, single, mesh, eos, time_step,
+                        F, d, v, e, p, T, a);
 
     //-------------------------------------------------------------------------
     // Post-process
-
     // update time
     soln_time += time_step;
     time_cnt++;
 
     // output the time step
-    if ( rank == 0 ) {
+    if (rank == 0) {
       std::cout << std::string(80, '=') << std::endl;
       auto ss = std::cout.precision();
-      std::cout.setf( std::ios::scientific );
+      std::cout.setf(std::ios::scientific);
       std::cout.precision(6);
-      std::cout << "|  " << "Step:" << std::setw(10) << time_cnt
-           << "  |  Time:" << std::setw(17) << soln_time
-           << "  |  Step Size:" << std::setw(17) << time_step
-           << "  |" << std::endl;
-      std::cout.unsetf( std::ios::scientific );
+      std::cout << "|  "
+                << "Step:" << std::setw(10) << time_cnt
+                << "  |  Time:" << std::setw(17) << soln_time
+                << "  |  Step Size:" << std::setw(17) << time_step << "  |"
+                << std::endl;
+      std::cout.unsetf(std::ios::scientific);
       std::cout.precision(ss);
     }
 
@@ -297,7 +287,7 @@ int driver(int argc, char** argv)
     }
 
 
-  }
+  } // time step for loop
 
   //===========================================================================
   // Post-process
@@ -321,7 +311,7 @@ int driver(int argc, char** argv)
   // success if you reached here
   return 0;
 
-}
+} // driver
 
 } // namespace
 } // namespace
