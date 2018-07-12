@@ -8,7 +8,6 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 // hydro includes
-// #include "inputs.h"
 #include "../../common/application_init.h"
 #include "../driver.h"
 #include "base_problem_2d.h"

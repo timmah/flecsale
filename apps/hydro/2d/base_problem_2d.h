@@ -39,16 +39,10 @@ ics_func(apps::common::vector_t const &x,
  * \return unique_ptr<ristra::hard_coded_test_problem> */
 struct base_problem_2d{
 
-  inline
   ristra::hard_coded_source_ptr_t
   operator()() {
     using namespace apps::common;
     static uint8_t constexpr dim = flecsale_input_traits::dim;
-
-    // using arrayr_t = flecsale_input_traits::arr_d_r_t;
-    // using arrays_t = flecsale_input_traits::arr_d_s_t;
-    // using string_t = string_t;
-    // using ics_function_t = ics_function_t;
 
     ristra::hard_coded_source_ptr_t phcs(ristra::mk_hard_coded_source());
     ristra::hard_coded_source_t &hcs(*phcs);
