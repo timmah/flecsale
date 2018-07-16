@@ -19,7 +19,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS 1)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${PROJECT_SOURCE_DIR}/cmake")
 
 # We need C++ 14
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED on)
 set(CMAKE_CXX_EXTENSIONS off)
 
@@ -42,8 +42,8 @@ set(CINCH_HEADER_SUFFIXES "\\.h")
 
 # set some global variables
 set( FLECSALE_LIBRARIES )
-set( FLECSALE_DATA_DIR "${PROJECT_SOURCE_DIR}/data" CACHE INTERNAL "")  
-set( FLECSALE_TOOL_DIR "${PROJECT_SOURCE_DIR}/tools" CACHE INTERNAL "")  
+set( FLECSALE_DATA_DIR "${PROJECT_SOURCE_DIR}/data" CACHE INTERNAL "")
+set( FLECSALE_TOOL_DIR "${PROJECT_SOURCE_DIR}/tools" CACHE INTERNAL "")
 
 
 #------------------------------------------------------------------------------#
@@ -84,7 +84,7 @@ if ( FLECSALE_RUNTIME_MODEL STREQUAL "mpi" )
 elseif ( FLECSALE_RUNTIME_MODEL STREQUAL "legion" )
   set( FLECSALE_UNIT_POLICY LEGION )
 else()
-  MESSAGE( FATAL_ERROR 
+  MESSAGE( FATAL_ERROR
     "Unknown FLECSI_SP_RUNTIME_MODEL being used: ${FLECSI_SP_RUNTIME_MODEL}" )
 endif()
 
@@ -151,7 +151,7 @@ endif()
 # size of integer ids to use
 set( FLECSALE_USE_64BIT_IDS ${FLECSI_SP_USE_64BIT_IDS} CACHE BOOL "" FORCE )
 
-if( FLECSALE_USE_64BIT_IDS ) 
+if( FLECSALE_USE_64BIT_IDS )
   message(STATUS "Note: using 64 bit integer ids.")
 else()
   message(STATUS "Note: using 32 bit integer ids.")
@@ -164,9 +164,9 @@ endif()
 # find python for running regression tests
 find_package (PythonInterp QUIET)
 if (PYTHONINTERP_FOUND)
-  cmake_dependent_option( 
-    ENABLE_REGRESSION_TESTS "Enable regression tests" ON 
-    "ENABLE_UNIT_TESTS" OFF 
+  cmake_dependent_option(
+    ENABLE_REGRESSION_TESTS "Enable regression tests" ON
+    "ENABLE_UNIT_TESTS" OFF
   )
 else ()
   option(ENABLE_REGRESSION_TESTS "Enable regression tests" OFF)
@@ -222,10 +222,10 @@ option(FLECSALE_ENABLE_CATALYST "Link the sim with Catalyst for in situ" OFF)
 
 if (FLECSALE_ENABLE_CATALYST)
   find_package(ParaView REQUIRED COMPONENTS vtkPVPythonCatalyst)
-  
+
   message(STATUS "Found Paraview: ${ParaView_DIR}")
   message(STATUS "IO with Paraview Catalyst enabled" )
-  
+
   include("${PARAVIEW_USE_FILE}")
 
   if (NOT PARAVIEW_USE_MPI)
@@ -279,20 +279,20 @@ else()
 endif()
 
 if (FLECSALE_ENABLE_SHAPO)
-  
+
   if (NOT VTK_FOUND)
     message( FATAL_ERROR "You need libVTK either from TPL or system to enable voro")
   endif()
 
   if (ShaPo_FOUND)
-    include_directories( ${SHAPO_INCLUDE_DIRS} )  
+    include_directories( ${SHAPO_INCLUDE_DIRS} )
     include( ${ShaPo_CONFIG} )
     include( ${SHAPO_USE_FILE} )
     list(APPEND FLECSALE_LIBRARIES ${SHAPO_LIBRARIES} )
   else ()
     message( FATAL_ERROR "You need libShaPo either from TPL or system to enable voro" )
   endif()
-  
+
   message( STATUS "Voronoi with shapo enabled" )
 
 endif()
@@ -356,13 +356,13 @@ endif()
 
 find_package(Legion)
 
-if (Legion_FOUND) 
+if (Legion_FOUND)
   include_directories(${Legion_INCLUDE_DIRS})
 endif()
 
 find_package(MPI)
 
-if (MPI_FOUND) 
+if (MPI_FOUND)
   include_directories(${MPI_C_INCLUDE_PATH})
 endif()
 
